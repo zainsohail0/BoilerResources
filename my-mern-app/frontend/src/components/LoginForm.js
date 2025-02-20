@@ -1,3 +1,4 @@
+// src/components/LoginForm.js
 import React, { useState } from 'react';
 
 const LoginForm = () => {
@@ -16,7 +17,7 @@ const LoginForm = () => {
 
   return (
     <div className="login-form">
-      <h2>Login</h2>  {/* This is the form heading */}
+      <h2>Login</h2>
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="email">Email</label>
@@ -52,11 +53,11 @@ const LoginForm = () => {
           </label>
         </div>
         <div>
-          <button type="submit">Login</button>  {/* Button text */}
+          <button type="submit">Login</button>
         </div>
       </form>
     </div>
   );
 };
 
-export default LoginForm;  // Default export
+export default LoginForm;  // Make sure it's a default export
