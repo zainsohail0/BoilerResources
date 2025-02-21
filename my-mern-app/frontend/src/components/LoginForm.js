@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "tw-elements"; // Import TW Elements (free)
 import { FcGoogle } from "react-icons/fc"; // Google Icon
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,8 +14,7 @@ const LoginForm = () => {
   };
 
   const handleForgotPassword = () => {
-    console.log("Redirect to Forgot Password Page");
-    // Add navigation logic to password reset page here
+    navigate("/forgot-password");
   };
 
   const handleGoogleLogin = () => {
