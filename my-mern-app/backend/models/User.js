@@ -1,35 +1,30 @@
-import mongoose from 'mongoose';
-const { Schema } = mongoose;
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
     email: {
-        type: String,
-        required: true, 
-        unique: true,    
-        lowercase: true, //always saves emails in lowercase
-      },
-    
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
     password: {
-        type: String,
-        //not required due to GoogleoAuth users
+      type: String,
+      required: true,
     },
+  },
+  {
+    timestamps: true, // Adds createdAt and updatedAt fields automatically
+  }
+);
 
-    googleId: {
-        type: String,
-    },
+const User = mongoose.model("User", userSchema);
 
-    profilePicture: {
-        type: String, //Stores URL of picture
-    },
-
-    major: {
-        type: String,
-    },
-
-    grade: {
-        type: String, //Either freshman, sophomore etc, or mastesrs, pHD etc
-    }
-});
-
-module.exports = mongoose.model("User", userSchema);
+export default User;
