@@ -30,6 +30,7 @@ app.use("/api/auth", authRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  g;
   console.error("Error:", err);
   res
     .status(500)
