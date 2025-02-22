@@ -2,49 +2,36 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import session from "express-session";
+import passport from "passport"; 
 import authRoutes from "./routes/auth.js";
+import "./config/passport.js";
 
 dotenv.config();
 
 const app = express();
 
-// More detailed CORS configuration
+// Express session for Google OAuth
 app.use(
-  cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+  session({
+    secret: process.env.SESSION_SECRET || "fallbackSecretKey",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false },
   })
 );
 
-app.use(express.json());
-
-// Test route
-app.get("/test", (req, res) => {
-  res.json({ message: "Backend is working" });
-});
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.use("/api/auth", authRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  g;
-  console.error("Error:", err);
-  res
-    .status(500)
-    .json({ message: "Internal server error", error: err.message });
-});
-
+// Start Server
 const PORT = process.env.PORT || 5001;
-
-// More detailed MongoDB connection
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB connected successfully");
     app.listen(PORT, () => {
