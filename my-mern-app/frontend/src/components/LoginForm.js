@@ -6,6 +6,7 @@ import { FcGoogle } from "react-icons/fc";
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -14,7 +15,7 @@ const LoginForm = () => {
     setError("");
 
     try {
-      console.log("Attempting to login with:", { email }); // Log login attempt
+      console.log("Attempting to login with:", { email, rememberMe });
 
       const response = await fetch("http://localhost:5001/api/auth/login", {
         method: "POST",
@@ -25,20 +26,24 @@ const LoginForm = () => {
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
-      console.log("Response status:", response.status); // Log response status
+
       const data = await response.json();
-      console.log("Response data:", data); // Log response data
+      console.log("Response data:", data);
+
       if (response.ok) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
+        if (rememberMe) {
+          localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem("token", data.token);
+          sessionStorage.setItem("user", JSON.stringify(data.user));
         }
         navigate("/home");
       } else {
         setError(data.message || "Login failed");
       }
     } catch (err) {
-      console.error("Detailed login error:", err); // Log detailed error
+      console.error("Detailed login error:", err);
       setError("Connection error. Please try again.");
     }
   };
@@ -105,8 +110,23 @@ const LoginForm = () => {
             />
           </div>
 
-          {/* Forgot Password Button */}
-          <div className="text-right mb-4">
+          {/* Remember Me & Forgot Password (Aligned in one row) */}
+          <div className="flex justify-between items-center mb-4">
+            {/* Remember Me */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={() => setRememberMe(!rememberMe)}
+                className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+                Remember Me
+              </label>
+            </div>
+
+            {/* Forgot Password */}
             <button
               type="button"
               onClick={handleForgotPassword}
