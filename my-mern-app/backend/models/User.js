@@ -17,8 +17,11 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
     },
+
+    googleid: {
+      type: String
+    }
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields automatically
