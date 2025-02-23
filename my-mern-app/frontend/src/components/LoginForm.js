@@ -1,16 +1,46 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "tw-elements"; // Import TW Elements (free)
-import { FcGoogle } from "react-icons/fc"; // Google Icon
+import "tw-elements";
+import { FcGoogle } from "react-icons/fc";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login attempt with", { email, password });
+    setError("");
+
+    try {
+      console.log("Attempting to login with:", { email }); // Log login attempt
+
+      const response = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      console.log("Response status:", response.status); // Log response status
+      const data = await response.json();
+      console.log("Response data:", data); // Log response data
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        navigate("/home");
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (err) {
+      console.error("Detailed login error:", err); // Log detailed error
+      setError("Connection error. Please try again.");
+    }
   };
 
   const handleForgotPassword = () => {
@@ -22,18 +52,28 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="h-screen bg-cover bg-center" style={{ backgroundImage: "url('/images/background.jpg')" }}>
+    <div
+      className="h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/images/background.jpg')" }}
+    >
       {/* Top Bar */}
       <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-       BoileResources
+        BoileResources
       </div>
-      
+
       <div className="flex justify-center items-center h-full">
         <form
           onSubmit={handleSubmit}
           className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
         >
           <h2 className="text-xl font-bold text-center mb-4">Login</h2>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
 
           {/* Email Input */}
           <div className="mb-4">
@@ -45,8 +85,8 @@ const LoginForm = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm 
-                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
             />
           </div>
 
@@ -60,8 +100,8 @@ const LoginForm = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm 
-                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
             />
           </div>
 
@@ -79,9 +119,9 @@ const LoginForm = () => {
           {/* Normal Login Button */}
           <button
             type="submit"
-            className="w-full text-white py-2 rounded-lg transition 
-                       bg-gradient-to-r from-black to-yellow-500 
-                       hover:from-gray-800 hover:to-yellow-400"
+            className="w-full text-white py-2 rounded-lg transition
+                      bg-gradient-to-r from-black to-yellow-500
+                      hover:from-gray-800 hover:to-yellow-400"
           >
             Login
           </button>
@@ -91,8 +131,8 @@ const LoginForm = () => {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg 
-                         shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
+              className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
+                        shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
             >
               <FcGoogle className="text-xl mr-2" /> Sign in with Google
             </button>
