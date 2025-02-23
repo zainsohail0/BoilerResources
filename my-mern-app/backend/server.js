@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
-import passport from "passport"; 
+import passport from "passport";
 import authRoutes from "./routes/auth.js";
 import "./config/passport.js";
 
@@ -11,13 +11,23 @@ dotenv.config();
 
 const app = express();
 
+// Add CORS Middleware
+app.use(cors({
+  origin: "http://localhost:3000", // Replace with your frontend URL
+  credentials: true // Allow cookies and authentication headers
+}));
+
+//  Add Middleware for JSON Parsing
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Express session for Google OAuth
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "fallbackSecretKey",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false },
+    cookie: { secure: false }, // Set secure: true if using HTTPS
   })
 );
 
