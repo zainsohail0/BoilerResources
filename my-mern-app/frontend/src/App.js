@@ -18,8 +18,8 @@ const OAuthHandler = () => {
       // Store the token in localStorage
       localStorage.setItem("token", token);
 
-      // ✅ Redirect to /dashboard instead of home for clarity
-      navigate("/dashboard");
+      // ✅ Redirect to /dashboard instead of home for clarity - FIX THIS COMMENT
+      navigate("/home");
     }
   }, [navigate]);
 

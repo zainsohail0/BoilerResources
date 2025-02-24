@@ -18,7 +18,7 @@ const LoginForm = () => {
     if (token) {
       localStorage.setItem("token", token);
       setIsAuthenticated(true);
-      navigate("/dashboard");
+      navigate("/home");
     }
   }, [navigate]);
 
@@ -67,7 +67,7 @@ const LoginForm = () => {
           sessionStorage.setItem("user", JSON.stringify(data.user));
         }
         setIsAuthenticated(true);
-        navigate("/dashboard");
+        navigate("/home");
       } else {
         setError({ ...error, general: data.message || "Login failed" });
       }
