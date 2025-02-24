@@ -9,24 +9,21 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState({ email: "", password: "", general: "" });
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Track authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
 
-  // Capture Google OAuth token from URL after redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
 
     if (token) {
       localStorage.setItem("token", token);
-      setIsAuthenticated(true); // User is authenticated
-      navigate("/dashboard"); // Redirect user after login
+      setIsAuthenticated(true);
+      navigate("/dashboard");
     }
   }, [navigate]);
 
-  // Email validation function
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  // Handle form submission for email/password login
   const handleSubmit = async (e) => {
     e.preventDefault();
     let validationErrors = { email: "", password: "", general: "" };
@@ -79,17 +76,14 @@ const LoginForm = () => {
     }
   };
 
-  // Handle Google OAuth login
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5001/api/auth/google";
   };
 
-  // Handle Forgot Password
   const handleForgotPassword = () => {
     navigate("/forgot-password");
   };
 
-  // Handle Logout
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:5001/api/auth/logout", {
@@ -108,12 +102,15 @@ const LoginForm = () => {
     }
   };
 
+  const handleGoToSignUp = () => {
+    navigate("/");
+  };
+
   return (
     <div
       className="h-screen bg-cover bg-center"
       style={{ backgroundImage: "url('/images/background.jpg')" }}
     >
-      {/* Top Bar */}
       <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
         BoileResources
       </div>
@@ -144,7 +141,9 @@ const LoginForm = () => {
 
             {/* Email Input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
               <input
                 type="text"
                 value={email}
@@ -153,12 +152,16 @@ const LoginForm = () => {
                   error.email ? "border-red-500" : "border-gray-300"
                 } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
               />
-              {error.email && <p className="text-red-500 text-xs mt-1">{error.email}</p>}
+              {error.email && (
+                <p className="text-red-500 text-xs mt-1">{error.email}</p>
+              )}
             </div>
 
             {/* Password Input */}
             <div className="mb-2">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
@@ -167,7 +170,9 @@ const LoginForm = () => {
                   error.password ? "border-red-500" : "border-gray-300"
                 } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
               />
-              {error.password && <p className="text-red-500 text-xs mt-1">{error.password}</p>}
+              {error.password && (
+                <p className="text-red-500 text-xs mt-1">{error.password}</p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password */}
@@ -213,6 +218,17 @@ const LoginForm = () => {
                         shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
               >
                 <FcGoogle className="text-xl mr-2" /> Sign in with Google
+              </button>
+            </div>
+
+            {/* Back to Sign Up Button */}
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={handleGoToSignUp}
+                className="text-sm text-blue-600 hover:underline focus:outline-none"
+              >
+                Don't have an account? Sign Up
               </button>
             </div>
           </form>
