@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ForgotPassword from "./components/ForgotPassword";
@@ -33,6 +34,7 @@ function App() {
         <Route path="/login" element={<LoginForm />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/profile" element={<ProfileUI />} />
         <Route path="/oauth-callback" element={<OAuthHandler />} /> 
         {/* ✅ OAuth handler properly captures tokens */}
       </Routes>
