@@ -1,112 +1,61 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-=======
 import React, { useState, useEffect } from 'react';
->>>>>>> @{-1}
 
 const ProfileUI = () => {
   const [profile, setProfile] = useState({
     name: 'John Doe',
     email: 'johndoe@example.com',
     bio: 'Student at Purdue',
-<<<<<<< HEAD
-  });
-  const [isEditing, setIsEditing] = useState(false);
-
-=======
     position: 'Student',
     grade: 'A',
     major: 'Computer Science',
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     console.log("isEditing state changed:", isEditing);
   }, [isEditing]);
 
->>>>>>> @{-1}
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile({ ...profile, [name]: value });
   };
 
-<<<<<<< HEAD
-  const handleEdit = () => setIsEditing(true);
-  const handleSave = (e) => {
-    e.preventDefault();
-=======
-  const handleEdit = () => {
-    console.log("Edit button clicked!"); // Debugging log
-    setIsEditing(true);
+  const validate = () => {
+    const newErrors = {};
+    if (!profile.name) newErrors.name = "Name is required";
+    if (!profile.email) newErrors.email = "Email is required";
+    if (!profile.bio) newErrors.bio = "Bio is required";
+    if (!profile.position) newErrors.position = "Position is required";
+    if (!profile.grade) newErrors.grade = "Grade is required";
+    if (!profile.major) newErrors.major = "Major is required";
+    return newErrors;
   };
 
   const handleSave = (e) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
     console.log("Save button clicked!"); // Debugging log
->>>>>>> @{-1}
     setIsEditing(false);
     // Handle form submission (will connect to backend API later)
   };
 
   const handleCancel = () => {
-<<<<<<< HEAD
-=======
     console.log("Cancel button clicked!"); // Debugging log
->>>>>>> @{-1}
     setIsEditing(false);
     // Optionally, reset the profile state to original values if needed
   };
 
+  const handleEdit = () => {
+    console.log("Edit button clicked!"); // Debugging log
+    setIsEditing(true);
+  };
+
   return (
-<<<<<<< HEAD
-    <div className="profile-ui">
-      <h2>Profile</h2>
-      <form onSubmit={handleSave}>
-        <div>
-          <label htmlFor="name">Name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={profile.name}
-            onChange={handleChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={profile.email}
-            onChange={handleChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div>
-          <label htmlFor="bio">Bio</label>
-          <input
-            type="text"
-            id="bio"
-            name="bio"
-            value={profile.bio}
-            onChange={handleChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div>
-          {isEditing ? (
-            <>
-              <button type="submit">Save</button>
-              <button type="button" onClick={handleCancel}>Cancel</button>
-            </>
-          ) : (
-            <button type="button" onClick={handleEdit}>Edit</button>
-          )}
-        </div>
-      </form>
-=======
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
@@ -126,7 +75,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Name"
               />
-              {console.log("Name input disabled:", !isEditing)}
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
             <div>
               <label htmlFor="email" className="sr-only">Email</label>
@@ -140,7 +89,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Email"
               />
-              {console.log("Email input disabled:", !isEditing)}
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
               <label htmlFor="bio" className="sr-only">Bio</label>
@@ -154,7 +103,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Bio"
               />
-              {console.log("Bio input disabled:", !isEditing)}
+              {errors.bio && <p className="text-red-500 text-xs mt-1">{errors.bio}</p>}
             </div>
             <div>
               <label htmlFor="position" className="sr-only">Position</label>
@@ -168,7 +117,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Position"
               />
-              {console.log("Position input disabled:", !isEditing)}
+              {errors.position && <p className="text-red-500 text-xs mt-1">{errors.position}</p>}
             </div>
             <div>
               <label htmlFor="grade" className="sr-only">Grade</label>
@@ -182,7 +131,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Grade"
               />
-              {console.log("Grade input disabled:", !isEditing)}
+              {errors.grade && <p className="text-red-500 text-xs mt-1">{errors.grade}</p>}
             </div>
             <div>
               <label htmlFor="major" className="sr-only">Major</label>
@@ -196,7 +145,7 @@ const ProfileUI = () => {
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
                 placeholder="Major"
               />
-              {console.log("Major input disabled:", !isEditing)}
+              {errors.major && <p className="text-red-500 text-xs mt-1">{errors.major}</p>}
             </div>
           </div>
 
@@ -229,7 +178,6 @@ const ProfileUI = () => {
           </div>
         </form>
       </div>
->>>>>>> @{-1}
     </div>
   );
 };
