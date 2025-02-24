@@ -1,31 +1,64 @@
+<<<<<<< HEAD
 import React, { useState } from 'react';
+=======
+import React, { useState, useEffect } from 'react';
+>>>>>>> @{-1}
 
 const ProfileUI = () => {
   const [profile, setProfile] = useState({
     name: 'John Doe',
     email: 'johndoe@example.com',
     bio: 'Student at Purdue',
+<<<<<<< HEAD
   });
   const [isEditing, setIsEditing] = useState(false);
 
+=======
+    position: 'Student',
+    grade: 'A',
+    major: 'Computer Science',
+  });
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    console.log("isEditing state changed:", isEditing);
+  }, [isEditing]);
+
+>>>>>>> @{-1}
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile({ ...profile, [name]: value });
   };
 
+<<<<<<< HEAD
   const handleEdit = () => setIsEditing(true);
   const handleSave = (e) => {
     e.preventDefault();
+=======
+  const handleEdit = () => {
+    console.log("Edit button clicked!"); // Debugging log
+    setIsEditing(true);
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    console.log("Save button clicked!"); // Debugging log
+>>>>>>> @{-1}
     setIsEditing(false);
     // Handle form submission (will connect to backend API later)
   };
 
   const handleCancel = () => {
+<<<<<<< HEAD
+=======
+    console.log("Cancel button clicked!"); // Debugging log
+>>>>>>> @{-1}
     setIsEditing(false);
     // Optionally, reset the profile state to original values if needed
   };
 
   return (
+<<<<<<< HEAD
     <div className="profile-ui">
       <h2>Profile</h2>
       <form onSubmit={handleSave}>
@@ -73,6 +106,130 @@ const ProfileUI = () => {
           )}
         </div>
       </form>
+=======
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Profile</h2>
+        </div>
+        <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="name" className="sr-only">Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={profile.name}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Name"
+              />
+              {console.log("Name input disabled:", !isEditing)}
+            </div>
+            <div>
+              <label htmlFor="email" className="sr-only">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={profile.email}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Email"
+              />
+              {console.log("Email input disabled:", !isEditing)}
+            </div>
+            <div>
+              <label htmlFor="bio" className="sr-only">Bio</label>
+              <input
+                id="bio"
+                name="bio"
+                type="text"
+                value={profile.bio}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Bio"
+              />
+              {console.log("Bio input disabled:", !isEditing)}
+            </div>
+            <div>
+              <label htmlFor="position" className="sr-only">Position</label>
+              <input
+                id="position"
+                name="position"
+                type="text"
+                value={profile.position}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Position"
+              />
+              {console.log("Position input disabled:", !isEditing)}
+            </div>
+            <div>
+              <label htmlFor="grade" className="sr-only">Grade</label>
+              <input
+                id="grade"
+                name="grade"
+                type="text"
+                value={profile.grade}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Grade"
+              />
+              {console.log("Grade input disabled:", !isEditing)}
+            </div>
+            <div>
+              <label htmlFor="major" className="sr-only">Major</label>
+              <input
+                id="major"
+                name="major"
+                type="text"
+                value={profile.major}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                placeholder="Major"
+              />
+              {console.log("Major input disabled:", !isEditing)}
+            </div>
+          </div>
+
+          <div>
+            {isEditing ? (
+              <>
+                <button
+                  type="submit"
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-2"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+>>>>>>> @{-1}
     </div>
   );
 };

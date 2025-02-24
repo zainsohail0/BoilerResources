@@ -3,9 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+<<<<<<< HEAD
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.5",
+=======
+    "@tailwindcss/postcss7-compat": "^2.2.17",
+    "@tailwindcss/vite": "^4.0.7",
+>>>>>>> @{-1}
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
@@ -13,8 +18,12 @@
     "axios": "^1.7.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.1.5",
     "react-scripts": "^5.0.1",
+    "run-dev": "^0.0.1-security",
+    "tw-elements": "^2.0.0",
+    "tw-elements-react": "^1.0.0-alpha-end",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -44,6 +53,10 @@
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.3",
+<<<<<<< HEAD
     "tailwindcss": "^4.0.7"
+=======
+    "tailwindcss": "^3.4.17"
+>>>>>>> @{-1}
   }
 }
