@@ -1,15 +1,63 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [user, setUser] = useState(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data); // Store user data in state
+        } else {
+          setUser(null);
+          navigate("/login"); // Redirect if not authenticated
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        setUser(null);
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      console.log("Logging out...");
+  
+      const logoutResponse = await fetch("http://localhost:5001/api/auth/logout", {
+        method: "GET",
+        credentials: "include", // Required for session clearing
+      });
+  
+      if (!logoutResponse.ok) {
+        throw new Error("Logout failed on backend");
+      }
+  
+      console.log("Logout successful, redirecting...");
+  
+      // Remove user data from state and local storage
+      setUser(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+  
+      // Use navigate instead of a backend redirect to avoid CORS issues
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
+  
+  
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -21,13 +69,19 @@ const Home = () => {
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-white">Welcome, {user.username || 'User'}!</span>
-              <button
-                onClick={handleLogout}
-                className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-              >
-                Logout
-              </button>
+              {user ? (
+                <>
+                  <span className="text-white">Welcome, {user.username}!</span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <span className="text-white">Loading...</span>
+              )}
             </div>
           </div>
         </div>

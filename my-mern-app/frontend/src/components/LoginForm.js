@@ -9,21 +9,40 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState({ email: "", password: "", general: "" });
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Check if user is already logged in (session-based authentication)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include", // Ensures session is checked
+        });
+  
+        const data = await res.json(); // Parse JSON separately
+        console.log("Session data:", data); // Debug log
+  
+        if (res.ok) {
+          setIsAuthenticated(true);
+  
+          // Only redirect if not already on /home
+          if (window.location.pathname !== "/home") {
+            navigate("/home");
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    };
+  
+    checkAuth();
+  }, []);
 
-    if (token) {
-      localStorage.setItem("token", token);
-      setIsAuthenticated(true);
-      navigate("/home");
-    }
-  }, [navigate]);
-
+  // Form Validation
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  // Handle Login
   const handleSubmit = async (e) => {
     e.preventDefault();
     let validationErrors = { email: "", password: "", general: "" };
@@ -52,23 +71,15 @@ const LoginForm = () => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensures session cookie is stored
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        if (rememberMe) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-        } else {
-          sessionStorage.setItem("token", data.token);
-          sessionStorage.setItem("user", JSON.stringify(data.user));
-        }
         setIsAuthenticated(true);
-        navigate("/home");
+        navigate("/home"); // Redirect on success
       } else {
+        const data = await response.json();
         setError({ ...error, general: data.message || "Login failed" });
       }
     } catch (err) {
@@ -76,25 +87,19 @@ const LoginForm = () => {
     }
   };
 
+  // Handle Google OAuth Login
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5001/api/auth/google";
   };
 
-  const handleForgotPassword = () => {
-    navigate("/forgot-password");
-  };
-
+  // Handle Logout (Clears session cookie)
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:5001/api/auth/logout", {
         method: "GET",
-        credentials: "include",
+        credentials: "include", // Ensures session is properly cleared
       });
 
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("user");
-      localStorage.removeItem("user");
       setIsAuthenticated(false);
       navigate("/");
     } catch (err) {
@@ -102,6 +107,12 @@ const LoginForm = () => {
     }
   };
 
+  // Handle Forgot Password
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
+  };
+
+  // Handle Redirect to Sign Up
   const handleGoToSignUp = () => {
     navigate("/");
   };
@@ -223,12 +234,13 @@ const LoginForm = () => {
 
             {/* Back to Sign Up Button */}
             <div className="text-center mt-4">
+              <span className="text-sm text-gray-600">Don't have an account? </span>
               <button
                 type="button"
-                onClick={handleGoToSignUp}
+                onClick={handleGoToSignUp} 
                 className="text-sm text-blue-600 hover:underline focus:outline-none"
               >
-                Don't have an account? Sign Up
+                Sign Up
               </button>
             </div>
           </form>

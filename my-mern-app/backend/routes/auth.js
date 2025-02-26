@@ -8,14 +8,16 @@ import "../config/passport.js";
 const router = express.Router();
 
 // Function to send JWT in HTTP-only cookie
-const sendTokenResponse = (user, res) => {
+const sendTokenResponse = (user, res, rememberMe) => {
+
+  const tokenExpiration = rememberMe ? "7d" : "1h"; //7 days if checked, 1 hour if not checked
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
-    maxAge: 60 * 60 * 1000, // 1 hour
+    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : null, // Persistent cookie if checked
   });
 
   res.json({
@@ -52,7 +54,7 @@ router.post("/signup", async (req, res) => {
 
 // Login User (Email & Password)
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   try {
     const user = await User.findOne({ email });
@@ -61,7 +63,7 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    sendTokenResponse(user, res);
+    sendTokenResponse(user, res, rememberMe);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -119,14 +121,16 @@ router.get(
 
 // Logout Route (Clears Session & Cookie)
 router.get("/logout", (req, res) => {
-  res.clearCookie("token"); //Clears JWT cookie
+  res.clearCookie("token"); // Clears JWT cookie
   res.clearCookie("connect.sid"); // Clears Google OAuth session
 
   req.session.destroy((err) => {
     if (err) {
+      console.error("Logout session destroy error:", err);
       return res.status(500).json({ message: "Logout failed" });
     }
-    res.redirect("http://localhost:3000"); // Redirects to login after logout
+    console.log("Session destroyed, logout successful"); // Debug log
+    res.json({ message: "Logout successful" }); // Returns JSON instead of redirecting
   });
 });
 

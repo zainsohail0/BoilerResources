@@ -49,7 +49,7 @@ const SignupForm = () => {
   };
 
   const handleGoogleSignup = () => {
-    console.log("Google Sign-Up Clicked");
+    window.location.href = "http://localhost:5001/api/auth/google"; /*Google Oauth button now leads to google */
   };
 
   return (
