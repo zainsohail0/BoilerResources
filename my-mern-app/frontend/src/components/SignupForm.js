@@ -58,14 +58,17 @@ const SignupForm = () => {
       style={{ backgroundImage: "url('/images/background.jpg')" }}
     >
       {/* Top Bar */}
-      <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-        BoileResources
-      </div>
+      <div
+    style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+    className="w-full py-4 text-center text-3xl font-bold"
+  >
+    BoileResources
+  </div>
 
-      <div className="flex justify-center items-center h-full">
-        <form
+  <div className="flex justify-center items-center h-[90%]">
+  <form
           onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
+          className="bg-white p-6 rounded-lg shadow-2xl w-96 bg-opacity-90 backdrop-blur-lg"
         >
           <h2 className="text-xl font-bold text-center mb-4">Sign Up</h2>
 
@@ -87,7 +90,7 @@ const SignupForm = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
             />
           </div>
 
@@ -102,7 +105,7 @@ const SignupForm = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
             />
           </div>
 
@@ -117,7 +120,7 @@ const SignupForm = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
             />
           </div>
 
@@ -132,30 +135,34 @@ const SignupForm = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
             />
           </div>
 
           {/* Signup Button */}
+          <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
+
           <button
             type="submit"
-            className="w-full text-white py-2 rounded-lg transition
-                      bg-gradient-to-r from-black to-yellow-500
-                      hover:from-gray-800 hover:to-yellow-400"
+            className="w-full text-black py-2 rounded-lg transition
+                      bg-white"
           >
             Sign Up
           </button>
+          </div>
+
 
           {/* Google OAuth Button */}
           <div className="relative mt-4">
-            <button
-              type="button"
-              onClick={handleGoogleSignup}
-              className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
-                        shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
-            >
-              <FcGoogle className="text-xl mr-2" /> Sign up with Google
-            </button>
+           <button
+             type="button"
+             onClick={handleGoogleSignup}
+             className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
+                        shadow-sm text-gray-700 hover:bg-gray-100 transition"
+             style={{ backgroundColor: "#cfb991" }}
+           >
+             <FcGoogle className="text-xl mr-2" /> Sign in with Google
+           </button>
           </div>
 
           {/* Login Link */}

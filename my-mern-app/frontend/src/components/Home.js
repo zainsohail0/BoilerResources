@@ -62,7 +62,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
-      <nav className="bg-yellow-700 shadow-lg">
+      <nav style={{ backgroundColor: "#000000" }} className="shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">

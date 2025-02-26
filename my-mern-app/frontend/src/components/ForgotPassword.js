@@ -14,12 +14,15 @@ const ForgotPassword = () => {
   return (
     <div className="h-screen bg-cover bg-center" style={{ backgroundImage: "url('/images/background.jpg')" }}>
       {/* Top Bar */}
-      <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-       BoileResources
-      </div>
+      <div
+    style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+    className="w-full py-4 text-center text-3xl font-bold"
+  >
+    BoileResources
+  </div>
 
-    <div className="h-screen flex justify-center items-center bg-gray-100">
-      <form
+  <div className="flex justify-center items-center h-[90%]">
+  <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
       >
@@ -37,14 +40,17 @@ const ForgotPassword = () => {
           />
         </div>
 
+        <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
+
         <button
           type="submit"
-          className="w-full text-white py-2 rounded-lg transition 
-                     bg-gradient-to-r from-black to-yellow-500 
-                     hover:from-gray-800 hover:to-yellow-400"
+          className="w-full text-black py-2 rounded-lg transition 
+                     bg-white"
         >
+          
           Reset Password
         </button>
+        </div>
 
         <div className="text-center mt-4">
           <button

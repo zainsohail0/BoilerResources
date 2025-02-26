@@ -120,13 +120,17 @@ const LoginForm = () => {
   return (
     <div
       className="h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/background.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg8.png')" }}
     >
-      <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-        BoileResources
-      </div>
+     <div
+    style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+    className="w-full py-4 text-center text-3xl font-bold"
+  >
+    BoileResources
+  </div>
 
-      <div className="flex justify-center items-center h-full">
+
+      <div className="flex justify-center items-center h-[90%]">
         {isAuthenticated ? (
           <div className="flex flex-col items-center">
             <p className="mb-4 text-lg">You are logged in!</p>
@@ -140,7 +144,7 @@ const LoginForm = () => {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
+            className="bg-white p-6 rounded-lg shadow-2xl w-96 bg-opacity-90 backdrop-blur-4xl"
           >
             <h2 className="text-xl font-bold text-center mb-4">Login</h2>
 
@@ -161,7 +165,7 @@ const LoginForm = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 border ${
                   error.email ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-600 focus:border-yellow-600`}
               />
               {error.email && (
                 <p className="text-red-500 text-xs mt-1">{error.email}</p>
@@ -179,7 +183,7 @@ const LoginForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 border ${
                   error.password ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-600 focus:border-yellow-600`}
               />
               {error.password && (
                 <p className="text-red-500 text-xs mt-1">{error.password}</p>
@@ -194,7 +198,7 @@ const LoginForm = () => {
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-600 border-gray-300 rounded"
                 />
                 <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
                   Remember Me
@@ -211,25 +215,27 @@ const LoginForm = () => {
             </div>
 
             {/* Login Button */}
-            <button
-              type="submit"
-              className="w-full text-white py-2 rounded-lg transition
-                      bg-gradient-to-r from-black to-yellow-500
-                      hover:from-gray-800 hover:to-yellow-400"
-            >
-              Login
-            </button>
+            <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
+  <button className="w-full bg-white text-black py-2 rounded-lg">
+    Login
+  </button>
+</div>
+
+
 
             {/* Google OAuth Button */}
             <div className="relative mt-4">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
-                        shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
-              >
-                <FcGoogle className="text-xl mr-2" /> Sign in with Google
-              </button>
+            <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
+             shadow-sm text-gray-700 hover:bg-gray-100 transition"
+  style={{ backgroundColor: "#cfb991" }}
+>
+  <FcGoogle className="text-xl mr-2" /> Sign in with Google
+</button>
+
+
             </div>
 
             {/* Back to Sign Up Button */}

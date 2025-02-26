@@ -16,7 +16,7 @@ const app = express();
 // CORS Middleware - Allows frontend to send credentials (cookies)
 app.use(
   cors({
-    origin: "http://localhost:3000", // Replace with frontend URL
+    origin: "http://localhost:3000", //frontend URL
     credentials: true, // Allow cookies & authentication headers
   })
 );
