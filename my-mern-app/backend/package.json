@@ -12,16 +12,15 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.10.1",
-    "passport-google-oauth20": "^2.0.0",
-
     "mailer": "^0.6.7",
-    "node": "^18.20.7"
-
+    "mongoose": "^8.10.1",
+    "node": "^18.20.7",
+    "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
