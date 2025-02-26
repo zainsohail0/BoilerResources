@@ -126,7 +126,7 @@ const LoginForm = () => {
     style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
     className="w-full py-4 text-center text-3xl font-bold"
   >
-    BoileResources
+    Boiler Resources
   </div>
 
 
@@ -229,10 +229,10 @@ const LoginForm = () => {
   type="button"
   onClick={handleGoogleLogin}
   className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
-             shadow-sm text-gray-700 hover:bg-gray-100 transition"
+             shadow-sm text-black hover:bg-gray-100 transition"
   style={{ backgroundColor: "#cfb991" }}
 >
-  <FcGoogle className="text-xl mr-2" /> Sign in with Google
+  <FcGoogle className="text-2xl mr-2"/> Sign in with Google
 </button>
 
 

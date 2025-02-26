@@ -66,7 +66,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">BoileResources</span>
+              <span className="text-white text-xl font-bold">Boiler Resources</span>
             </div>
             <div className="flex items-center gap-4">
               {user ? (
