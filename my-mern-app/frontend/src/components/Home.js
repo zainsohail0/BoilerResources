@@ -5,6 +5,7 @@ const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userClasses, setUserClasses] = useState([]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
