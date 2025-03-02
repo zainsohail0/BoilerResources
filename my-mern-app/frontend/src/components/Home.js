@@ -7,6 +7,12 @@ const Home = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
 
+  useEffect(() => {
+    // Load user classes from localStorage
+    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
+    setUserClasses(classes);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
