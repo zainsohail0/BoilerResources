@@ -1,9 +1,14 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
+=======
+import React, { useState } from "react";
+>>>>>>> main
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
+<<<<<<< HEAD
   const [userClasses, setUserClasses] = useState([]);
   
   useEffect(() => {
@@ -11,6 +16,9 @@ const Home = () => {
     const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
     setUserClasses(classes);
   }, []);
+=======
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+>>>>>>> main
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -18,8 +26,17 @@ const Home = () => {
     navigate('/');
   };
 
+<<<<<<< HEAD
   const handleAddClass = () => {
     navigate('/add-class');
+=======
+  const handleViewProfile = () => {
+    navigate('/profile');
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+>>>>>>> main
   };
 
   return (
@@ -31,14 +48,45 @@ const Home = () => {
             <div className="flex items-center">
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="relative flex items-center gap-4">
               <span className="text-white">Welcome, {user.username || 'User'}!</span>
-              <button
-                onClick={handleLogout}
-                className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-              >
-                Logout
-              </button>
+              <div className="relative">
+                <button
+                  onClick={toggleDropdown}
+                  className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 6h16M4 12h16m-7 6h7"
+                    ></path>
+                  </svg>
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-20">
+                    <button
+                      onClick={handleViewProfile}
+                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
