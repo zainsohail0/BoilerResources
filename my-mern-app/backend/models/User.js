@@ -18,9 +18,16 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
     },
-
     googleid: {
       type: String
+    },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
+    profileImage: {
+      type: String,
+      default: "",
     }
   },
   {
