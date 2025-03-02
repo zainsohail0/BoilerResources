@@ -6,6 +6,7 @@ import SignupForm from "./components/SignupForm";
 import ForgotPassword from "./components/ForgotPassword";
 import Home from "./components/Home"; 
 import ResetPassword from "./components/ResetPassword";
+import AddClass from "./components/AddClass";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/add-class" element={<AddClass />} />
         <Route path="/profile" element={<ProfileUI />} />
         <Route path="/oauth-callback" element={<OAuthHandler />} />
         {/* ✅ OAuth handler properly captures tokens */}
