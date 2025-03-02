@@ -19,7 +19,7 @@ const OAuthHandler = () => {
       // Store the token in localStorage
       localStorage.setItem("token", token);
 
-      // ✅ Redirect to /dashboard instead of home for clarity - FIX THIS COMMENT
+      // Redirect to /dashboard instead of home for clarity - FIX THIS COMMENT
       navigate("/home");
     }
   }, [navigate]);
@@ -38,7 +38,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<ProfileUI />} />
         <Route path="/oauth-callback" element={<OAuthHandler />} />
-        {/* ✅ OAuth handler properly captures tokens */}
+
       </Routes>
     </Router>
   );

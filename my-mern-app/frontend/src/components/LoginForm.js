@@ -9,21 +9,40 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState({ email: "", password: "", general: "" });
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Check if user is already logged in (session-based authentication)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include", // Ensures session is checked
+        });
+  
+        const data = await res.json(); // Parse JSON separately
+        console.log("Session data:", data); // Debug log
+  
+        if (res.ok) {
+          setIsAuthenticated(true);
+  
+          // Only redirect if not already on /home
+          if (window.location.pathname !== "/home") {
+            navigate("/home");
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    };
+  
+    checkAuth();
+  }, []);
 
-    if (token) {
-      localStorage.setItem("token", token);
-      setIsAuthenticated(true);
-      navigate("/home");
-    }
-  }, [navigate]);
-
+  // Form Validation
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  // Handle Login
   const handleSubmit = async (e) => {
     e.preventDefault();
     let validationErrors = { email: "", password: "", general: "" };
@@ -52,23 +71,15 @@ const LoginForm = () => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensures session cookie is stored
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        if (rememberMe) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-        } else {
-          sessionStorage.setItem("token", data.token);
-          sessionStorage.setItem("user", JSON.stringify(data.user));
-        }
         setIsAuthenticated(true);
-        navigate("/home");
+        navigate("/home"); // Redirect on success
       } else {
+        const data = await response.json();
         setError({ ...error, general: data.message || "Login failed" });
       }
     } catch (err) {
@@ -76,25 +87,19 @@ const LoginForm = () => {
     }
   };
 
+  // Handle Google OAuth Login
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5001/api/auth/google";
   };
 
-  const handleForgotPassword = () => {
-    navigate("/forgot-password");
-  };
-
+  // Handle Logout (Clears session cookie)
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:5001/api/auth/logout", {
         method: "GET",
-        credentials: "include",
+        credentials: "include", // Ensures session is properly cleared
       });
 
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("user");
-      localStorage.removeItem("user");
       setIsAuthenticated(false);
       navigate("/");
     } catch (err) {
@@ -102,6 +107,12 @@ const LoginForm = () => {
     }
   };
 
+  // Handle Forgot Password
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
+  };
+
+  // Handle Redirect to Sign Up
   const handleGoToSignUp = () => {
     navigate("/");
   };
@@ -109,13 +120,17 @@ const LoginForm = () => {
   return (
     <div
       className="h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/background.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg8.png')" }}
     >
-      <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-        BoileResources
-      </div>
+     <div
+    style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+    className="w-full py-4 text-center text-3xl font-bold"
+  >
+    Boiler Resources
+  </div>
 
-      <div className="flex justify-center items-center h-full">
+
+      <div className="flex justify-center items-center h-[90%]">
         {isAuthenticated ? (
           <div className="flex flex-col items-center">
             <p className="mb-4 text-lg">You are logged in!</p>
@@ -129,7 +144,7 @@ const LoginForm = () => {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
+            className="bg-white p-6 rounded-lg shadow-2xl w-96 bg-opacity-90 backdrop-blur-4xl"
           >
             <h2 className="text-xl font-bold text-center mb-4">Login</h2>
 
@@ -150,7 +165,7 @@ const LoginForm = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 border ${
                   error.email ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-600 focus:border-yellow-600`}
               />
               {error.email && (
                 <p className="text-red-500 text-xs mt-1">{error.email}</p>
@@ -168,7 +183,7 @@ const LoginForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 border ${
                   error.password ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-600 focus:border-yellow-600`}
               />
               {error.password && (
                 <p className="text-red-500 text-xs mt-1">{error.password}</p>
@@ -183,7 +198,7 @@ const LoginForm = () => {
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-600 border-gray-300 rounded"
                 />
                 <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
                   Remember Me
@@ -200,35 +215,38 @@ const LoginForm = () => {
             </div>
 
             {/* Login Button */}
-            <button
-              type="submit"
-              className="w-full text-white py-2 rounded-lg transition
-                      bg-gradient-to-r from-black to-yellow-500
-                      hover:from-gray-800 hover:to-yellow-400"
-            >
-              Login
-            </button>
+            <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
+  <button className="w-full bg-white text-black py-2 rounded-lg">
+    Login
+  </button>
+</div>
+
+
 
             {/* Google OAuth Button */}
             <div className="relative mt-4">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
-                        shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
-              >
-                <FcGoogle className="text-xl mr-2" /> Sign in with Google
-              </button>
+            <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
+             shadow-sm text-black hover:bg-gray-100 transition"
+  style={{ backgroundColor: "#cfb991" }}
+>
+  <FcGoogle className="text-2xl mr-2"/> Sign in with Google
+</button>
+
+
             </div>
 
             {/* Back to Sign Up Button */}
             <div className="text-center mt-4">
+              <span className="text-sm text-gray-600">Don't have an account? </span>
               <button
                 type="button"
-                onClick={handleGoToSignUp}
+                onClick={handleGoToSignUp} 
                 className="text-sm text-blue-600 hover:underline focus:outline-none"
               >
-                Don't have an account? Sign Up
+                Sign Up
               </button>
             </div>
           </form>
