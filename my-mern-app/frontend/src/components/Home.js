@@ -1,24 +1,11 @@
-<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
-=======
 import React, { useState } from "react";
->>>>>>> main
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
-<<<<<<< HEAD
-  const [userClasses, setUserClasses] = useState([]);
-  
-  useEffect(() => {
-    // Load user classes from localStorage
-    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
-    setUserClasses(classes);
-  }, []);
-=======
   const [dropdownOpen, setDropdownOpen] = useState(false);
->>>>>>> main
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -26,17 +13,16 @@ const Home = () => {
     navigate('/');
   };
 
-<<<<<<< HEAD
   const handleAddClass = () => {
     navigate('/add-class');
-=======
+  };
+
   const handleViewProfile = () => {
     navigate('/profile');
   };
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
->>>>>>> main
   };
 
   return (
