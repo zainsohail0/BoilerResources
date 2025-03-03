@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { ThemeProvider } from './context/ThemeContext';
 import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -30,19 +31,23 @@ const OAuthHandler = () => {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-      <Route path="/" element={<SignupForm />} />
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/add-class" element={<AddClass />} />
-        <Route path="/profile" element={<ProfileUI />} />
-        <Route path="/oauth-callback" element={<OAuthHandler />} />
-        {/* ✅ OAuth handler properly captures tokens */}
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-100">
+          <Routes>
+            <Route path="/" element={<SignupForm />} />
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/add-class" element={<AddClass />} />
+            <Route path="/profile" element={<ProfileUI />} />
+            <Route path="/oauth-callback" element={<OAuthHandler />} />
+            {/* ✅ OAuth handler properly captures tokens */}
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 
