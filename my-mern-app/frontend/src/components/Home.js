@@ -1,15 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Minimum credit hours threshold
+const MIN_CREDIT_HOURS = 12;
 
 const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userClasses, setUserClasses] = useState([]);
+  const [totalCredits, setTotalCredits] = useState(0);
+
+  useEffect(() => {
+    // Load user classes from localStorage
+    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
+    setUserClasses(classes);
+    
+    // Calculate total credits
+    const total = classes.reduce((sum, classItem) => sum + classItem.credits, 0);
+    setTotalCredits(total);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/');
   };
+
+  const handleAddClass = () => {
+    navigate('/add-class');
+  };
+
+  const handleViewProfile = () => {
+    navigate('/profile');
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -20,19 +50,50 @@ const Home = () => {
             <div className="flex items-center">
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="relative flex items-center gap-4">
               <span className="text-white">Welcome, {user.username || 'User'}!</span>
-              <button
-                onClick={handleLogout}
-                className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-              >
-                Logout
-              </button>
+              <div className="relative">
+                <button
+                  onClick={toggleDropdown}
+                  className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 6h16M4 12h16m-7 6h7"
+                    ></path>
+                  </svg>
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-20">
+                    <button
+                      onClick={handleViewProfile}
+                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </nav>
-
+      
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
@@ -42,7 +103,52 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Example Resource Cards */}
+        {/* User's Classes Section */}
+        <div className="bg-white rounded-lg shadow p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">{user.username || 'Your'}'s Classes</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Total Credits: {totalCredits} 
+                {totalCredits < MIN_CREDIT_HOURS && 
+                  <span className="text-red-500 ml-2">
+                    (Minimum: {MIN_CREDIT_HOURS})
+                  </span>
+                }
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleAddClass}
+                className="bg-yellow-700 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 transition"
+              >
+                Add Class
+              </button>
+              <button 
+                onClick={() => navigate('/delete-class')}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+              >
+                Delete Class
+              </button>
+            </div>
+          </div>
+          
+          {userClasses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userClasses.map((classItem, index) => (
+                <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-semibold text-lg">{classItem.code}</h3>
+                  <p>{classItem.name}</p>
+                  <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">You haven't added any classes yet. Click "Add Class" to get started.</p>
+          )}
+        </div>
+        
+        {/* Resource Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-2">My Resources</h2>
@@ -60,6 +166,8 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 };

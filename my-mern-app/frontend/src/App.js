@@ -7,6 +7,8 @@ import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import VerifyEmail from "./components/VerifyEmail";
 import Home from "./components/Home";
+import AddClass from "./components/AddClass";
+import DeleteClass from "./components/DeleteClass";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -38,6 +40,8 @@ function App() {
         <Route path="/verify-email/:id/:token" element={<VerifyEmail />} />
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<ProfileUI />} />
+        <Route path="/add-class" element={<AddClass />} />
+        <Route path="/delete-class" element={<DeleteClass />} />
         <Route path="/oauth-callback" element={<OAuthHandler />} />
       </Routes>
     </Router>
