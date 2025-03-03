@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user')) || {};
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  //const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
 
   useEffect(() => {
@@ -12,73 +11,97 @@ const Home = () => {
     const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
     setUserClasses(classes);
   }, []);
+  const [user, setUser] = useState(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data); // Store user data in state
+        } else {
+          setUser(null);
+          navigate("/login"); // Redirect if not authenticated
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        setUser(null);
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      console.log("Logging out...");
+  
+      const logoutResponse = await fetch("http://localhost:5001/api/auth/logout", {
+        method: "GET",
+        credentials: "include", // Required for session clearing
+      });
+  
+      if (!logoutResponse.ok) {
+        throw new Error("Logout failed on backend");
+      }
+  
+      console.log("Logout successful, redirecting...");
+  
+      // Remove user data from state and local storage
+      setUser(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+  
+      // Use navigate instead of a backend redirect to avoid CORS issues
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
+  
+  
 
   const handleAddClass = () => {
     navigate('/add-class');
   };
-
+/*
   const handleViewProfile = () => {
     navigate('/profile');
   };
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
-  };
+  };*/
 
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
-      <nav className="bg-yellow-700 shadow-lg">
+      <nav style={{ backgroundColor: "#000000" }} className="shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">BoileResources</span>
+              <span className="text-white text-xl font-bold">Boiler Resources</span>
             </div>
-            <div className="relative flex items-center gap-4">
-              <span className="text-white">Welcome, {user.username || 'User'}!</span>
-              <div className="relative">
-                <button
-                  onClick={toggleDropdown}
-                  className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <span className="text-white">Welcome, {user.username}!</span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M4 6h16M4 12h16m-7 6h7"
-                    ></path>
-                  </svg>
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-20">
-                    <button
-                      onClick={handleViewProfile}
-                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                    >
-                      View Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <span className="text-white">Loading...</span>
+              )}
             </div>
           </div>
         </div>
@@ -96,7 +119,7 @@ const Home = () => {
         {/* User's Classes Section */}
         <div className="bg-white rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">{user.username || 'Your'}'s Classes</h2>
+          <h2 className="text-xl font-semibold">{user ? `${user.username}'s` : 'Your'} Classes</h2>
             <button 
               onClick={handleAddClass}
               className="bg-yellow-700 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 transition"
