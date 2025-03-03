@@ -1,20 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Minimum credit hours threshold
+const MIN_CREDIT_HOURS = 12;
+
 const Home = () => {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
   const [user, setUser] = useState(null);
+  const [totalCredits, setTotalCredits] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Load user classes from localStorage
     const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
     setUserClasses(classes);
+    
+    // Calculate total credits
+    const total = classes.reduce((sum, classItem) => sum + classItem.credits, 0);
+    setTotalCredits(total);
   }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
+      setIsLoading(true);
       try {
         const res = await fetch("http://localhost:5001/api/auth/me", {
           method: "GET",
@@ -32,6 +42,8 @@ const Home = () => {
         console.error("Auth check failed:", err);
         setUser(null);
         navigate("/login");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -80,6 +92,15 @@ const Home = () => {
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
+
+  // If still loading, show a loading indicator
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-bold">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -133,7 +154,7 @@ const Home = () => {
                   </div>
                 </>
               ) : (
-                <span className="text-white">Loading...</span>
+                <span className="text-white">Welcome, Guest!</span>
               )}
             </div>
           </div>
@@ -152,7 +173,17 @@ const Home = () => {
         {/* User's Classes Section */}
         <div className="bg-white rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">{user ? `${user.username}'s` : 'Your'} Classes</h2>
+            <div>
+              <h2 className="text-xl font-semibold">{user ? `${user.username}'s` : 'Your'} Classes</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Total Credits: {totalCredits} 
+                {totalCredits < MIN_CREDIT_HOURS && 
+                  <span className="text-red-500 ml-2">
+                    (Minimum: {MIN_CREDIT_HOURS})
+                  </span>
+                }
+              </p>
+            </div>
             <div className="flex gap-2">
               <button 
                 onClick={handleAddClass}

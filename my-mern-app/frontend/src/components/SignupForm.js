@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "tw-elements";
 import { FcGoogle } from "react-icons/fc";
+import axios from "axios";
 
 const SignupForm = () => {
   const [username, setUsername] = useState("");
@@ -9,6 +10,9 @@ const SignupForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const validateInputs = () => {
@@ -44,28 +48,50 @@ const SignupForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateInputs()) return;
+    setIsSubmitting(true);
+    setError("");
+    setSuccess("");
+    
+    // Validate inputs before proceeding
+    if (!validateInputs()) {
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      const response = await fetch("http://localhost:5001/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ username, email, password }),
+      console.log("Attempting to signup with:", { email, username });
+
+      const response = await axios.post("http://localhost:5001/api/auth/signup", {
+        username,
+        email,
+        password
       });
 
-      const data = await response.json();
+      console.log("Response status:", response.status);
+      console.log("Response data:", response.data);
 
-      if (response.ok) {
-        navigate("/login");
+      if (response.status === 201) {
+        setSuccess(
+          "Account created! Please check your email to verify your account."
+        );
+        // Clear form fields
+        setUsername("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setErrors({});
       } else {
-        setErrors({ general: data.message || "Signup failed." });
+        setError(response.data.message || "Signup failed");
       }
     } catch (err) {
-      setErrors({ general: "Connection error. Please try again." });
+      console.error("Detailed signup error:", err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Connection error. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -92,9 +118,17 @@ const SignupForm = () => {
         >
           <h2 className="text-xl font-bold text-center mb-4">Sign Up</h2>
 
-          {errors.general && (
+          {/* Success Message */}
+          {success && (
+            <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded">
+              {success}
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
             <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
-              {errors.general}
+              {error}
             </div>
           )}
 
@@ -105,7 +139,8 @@ const SignupForm = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
             {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
           </div>
@@ -117,7 +152,8 @@ const SignupForm = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
             {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
           </div>
@@ -129,7 +165,8 @@ const SignupForm = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
             {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
           </div>
@@ -141,16 +178,22 @@ const SignupForm = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
-                        focus:outline-none focus:ring-yellow-600 focus:border-yellow-600"
+                        focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
             {errors.confirmPassword && (
               <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
             )}
           </div>
 
+          {/* Signup Button */}
           <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
-            <button type="submit" className="w-full text-black py-2 rounded-lg transition bg-white">
-              Sign Up
+            <button
+              type="submit"
+              className="w-full bg-white text-black py-2 rounded-lg disabled:opacity-70"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
             </button>
           </div>
 
@@ -161,8 +204,9 @@ const SignupForm = () => {
               className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
                         shadow-sm text-black hover:bg-gray-100 transition"
               style={{ backgroundColor: "#cfb991" }}
+              disabled={isSubmitting}
             >
-              <FcGoogle className="text-2xl mr-2" /> Sign in with Google
+              <FcGoogle className="text-2xl mr-2" /> Sign up with Google
             </button>
           </div>
 
