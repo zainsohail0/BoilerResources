@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Minimum credit hours threshold
+const MIN_CREDIT_HOURS = 12;
+
 const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
+  const [totalCredits, setTotalCredits] = useState(0);
 
   useEffect(() => {
     // Load user classes from localStorage
     const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
     setUserClasses(classes);
+    
+    // Calculate total credits
+    const total = classes.reduce((sum, classItem) => sum + classItem.credits, 0);
+    setTotalCredits(total);
   }, []);
 
   const handleLogout = () => {
@@ -30,6 +38,8 @@ const Home = () => {
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
+
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -96,13 +106,31 @@ const Home = () => {
         {/* User's Classes Section */}
         <div className="bg-white rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">{user.username || 'Your'}'s Classes</h2>
-            <button 
-              onClick={handleAddClass}
-              className="bg-yellow-700 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 transition"
-            >
-              Add Class
-            </button>
+            <div>
+              <h2 className="text-xl font-semibold">{user.username || 'Your'}'s Classes</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Total Credits: {totalCredits} 
+                {totalCredits < MIN_CREDIT_HOURS && 
+                  <span className="text-red-500 ml-2">
+                    (Minimum: {MIN_CREDIT_HOURS})
+                  </span>
+                }
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleAddClass}
+                className="bg-yellow-700 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 transition"
+              >
+                Add Class
+              </button>
+              <button 
+                onClick={() => navigate('/delete-class')}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+              >
+                Delete Class
+              </button>
+            </div>
           </div>
           
           {userClasses.length > 0 ? (
@@ -138,6 +166,8 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 };

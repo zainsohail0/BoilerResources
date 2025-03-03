@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "tw-elements";
 import { FcGoogle } from "react-icons/fc";
+import axios from "axios";
 
 const SignupForm = () => {
   const [username, setUsername] = useState("");
@@ -9,47 +10,56 @@ const SignupForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
+    setIsSubmitting(true);
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setIsSubmitting(false);
       return;
     }
 
     try {
       console.log("Attempting to signup with:", { email, username });
 
-      const response = await fetch("http://localhost:5001/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ username, email, password }),
+      const response = await axios.post("http://localhost:5001/api/auth/signup", {
+        username,
+        email,
+        password
       });
 
       console.log("Response status:", response.status);
-      const data = await response.json();
-      console.log("Response data:", data);
+      console.log("Response data:", response.data);
 
-      if (response.ok) {
-        navigate("/login");
+      if (response.status === 201) {
+        setSuccess(
+          "Account created! Please check your email to verify your account."
+        );
+        // Clear form fields
+        setUsername("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
       } else {
-        setError(data.message || "Signup failed");
+        setError(response.data.message || "Signup failed");
       }
     } catch (err) {
       console.error("Detailed signup error:", err);
-      setError("Connection error. Please try again.");
+      setError(err.response?.data?.message || "Connection error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignup = () => {
-    console.log("Google Sign-Up Clicked");
+    window.location.href = "http://localhost:5001/api/auth/google";
   };
 
   return (
@@ -68,6 +78,13 @@ const SignupForm = () => {
           className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
         >
           <h2 className="text-xl font-bold text-center mb-4">Sign Up</h2>
+
+          {/* Success Message */}
+          {success && (
+            <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded">
+              {success}
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -88,6 +105,7 @@ const SignupForm = () => {
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -103,6 +121,7 @@ const SignupForm = () => {
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -118,6 +137,7 @@ const SignupForm = () => {
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -133,17 +153,20 @@ const SignupForm = () => {
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={isSubmitting}
             />
           </div>
 
           {/* Signup Button */}
           <button
             type="submit"
-            className="w-full text-white py-2 rounded-lg transition
+            className={`w-full text-white py-2 rounded-lg transition
                       bg-gradient-to-r from-black to-yellow-500
-                      hover:from-gray-800 hover:to-yellow-400"
+                      hover:from-gray-800 hover:to-yellow-400
+                      ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}`}
+            disabled={isSubmitting}
           >
-            Sign Up
+            {isSubmitting ? "Signing Up..." : "Sign Up"}
           </button>
 
           {/* Google OAuth Button */}
@@ -153,6 +176,7 @@ const SignupForm = () => {
               onClick={handleGoogleSignup}
               className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
                         shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
+              disabled={isSubmitting}
             >
               <FcGoogle className="text-xl mr-2" /> Sign up with Google
             </button>
