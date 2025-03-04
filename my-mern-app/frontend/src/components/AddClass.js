@@ -1,65 +1,97 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Mock data for demonstration purposes
-const availableClasses = [
-  { id: 1, code: "CS18000", name: "Problem Solving and Object-Oriented Programming", credits: 4 },
-  { id: 2, code: "CS25100", name: "Data Structures and Algorithms", credits: 3 },
-  { id: 3, code: "CS25200", name: "Systems Programming", credits: 3 },
-  { id: 4, code: "MA16500", name: "Analytic Geometry and Calculus I", credits: 4 },
-  { id: 5, code: "MA16600", name: "Analytic Geometry and Calculus II", credits: 4 },
-  { id: 6, code: "PHYS17200", name: "Modern Mechanics", credits: 4 },
-  { id: 7, code: "ENGL10600", name: "First-Year Composition", credits: 4 },
-  { id: 8, code: "CS30700", name: "Software Engineering", credits: 3 },
-  { id: 9, code: "CS35200", name: "Compilers: Principles and Practice", credits: 3 },
-  { id: 10, code: "CS38100", name: "Introduction to Analysis of Algorithms", credits: 3 },
-];
+const API_URL = "http://localhost:5001"; // ✅ Ensure correct API URL
 
 const AddClass = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [userClasses, setUserClasses] = useState([]);
-  
+  const [userId, setUserId] = useState(null);
+
+  // ✅ Fetch user details on component mount
   useEffect(() => {
-    // Load existing user classes
-    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
-    setUserClasses(classes);
+    fetch(`${API_URL}/api/auth/me`, {
+      method: "GET",
+      credentials: "include", // Ensures cookies are sent
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.id) {
+          setUserId(data.id);
+          fetchUserClasses(data.id);
+        }
+      })
+      .catch((err) => console.error("❌ Error fetching user:", err));
   }, []);
-  
+
+  // ✅ Fetch all available courses
   useEffect(() => {
-    // Filter classes based on search term
-    if (searchTerm.trim() === "") {
-      setSearchResults([]);
-    } else {
-      const filteredResults = availableClasses.filter(classItem => 
-        classItem.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        classItem.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setSearchResults(filteredResults);
-    }
-  }, [searchTerm]);
-  
+    fetch(`${API_URL}/api/courses`)
+      .then((res) => res.json())
+      .then((data) => setSearchResults(data))
+      .catch((err) => console.error("❌ Error fetching courses:", err));
+  }, []);
+
+  // ✅ Fetch user-enrolled classes
+  const fetchUserClasses = (id) => {
+    fetch(`${API_URL}/api/classes/user/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("📌 User's enrolled classes:", data);
+        setUserClasses(data);
+      })
+      .catch((err) => console.error("❌ Error fetching user courses:", err));
+  };
+
+  // ✅ Handle adding a class
   const handleAddClass = (classItem) => {
-    // Check if class is already added
-    const isAlreadyAdded = userClasses.some(c => c.code === classItem.code);
-    if (!isAlreadyAdded) {
-      const updatedClasses = [...userClasses, classItem];
-      setUserClasses(updatedClasses);
-      localStorage.setItem('userClasses', JSON.stringify(updatedClasses));
+    if (!userId) {
+      console.error("❌ User ID not found");
+      return;
     }
+
+    fetch(`${API_URL}/api/classes/user/${userId}/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: classItem._id }),
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("✅ Added class successfully:", data);
+        setUserClasses(data.courses);
+      })
+      .catch((err) => console.error("❌ Error adding course:", err));
   };
-  
-  const handleRemoveClass = (classCode) => {
-    const updatedClasses = userClasses.filter(c => c.code !== classCode);
-    setUserClasses(updatedClasses);
-    localStorage.setItem('userClasses', JSON.stringify(updatedClasses));
+
+  // ✅ Handle removing a class
+  const handleRemoveClass = (classId) => {
+    if (!userId) {
+      console.error("❌ User ID not found");
+      return;
+    }
+
+    fetch(`${API_URL}/api/classes/user/${userId}/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: classId }),
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("✅ Removed class successfully:", data);
+        setUserClasses(data.courses);
+      })
+      .catch((err) => console.error("❌ Error removing course:", err));
   };
-  
+
+  // ✅ Handle back navigation
   const handleGoBack = () => {
     navigate(-1);
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
@@ -80,12 +112,12 @@ const AddClass = () => {
           </div>
         </div>
       </nav>
-      
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">Search and Add Classes</h1>
-          
+
           {/* Search Bar */}
           <div className="mb-6">
             <input
@@ -96,59 +128,63 @@ const AddClass = () => {
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700"
             />
           </div>
-          
+
           {/* Search Results */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Search Results</h2>
             {searchResults.length > 0 ? (
               <div className="space-y-4">
-                {searchResults.map((classItem) => {
-                  const isAdded = userClasses.some(c => c.code === classItem.code);
-                  return (
-                    <div key={classItem.id} className="border rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">{classItem.code}</h3>
-                        <p>{classItem.name}</p>
-                        <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
+                {searchResults
+                  .filter(
+                    (classItem) =>
+                      classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      classItem.title.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((classItem) => {
+                    const isAdded = userClasses.some((c) => c._id === classItem._id);
+                    return (
+                      <div key={classItem._id} className="border rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold">{classItem.courseCode}</h3>
+                          <p>{classItem.title}</p>
+                          <p className="text-sm text-gray-600">Credits: {classItem.creditHours}</p>
+                        </div>
+                        <button
+                          onClick={() => handleAddClass(classItem)}
+                          disabled={isAdded}
+                          className={`px-4 py-2 rounded-lg ${
+                            isAdded
+                              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                              : "bg-yellow-700 text-white hover:bg-yellow-800"
+                          } transition`}
+                        >
+                          {isAdded ? "Added" : "Add Class"}
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleAddClass(classItem)}
-                        disabled={isAdded}
-                        className={`px-4 py-2 rounded-lg ${
-                          isAdded 
-                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                            : 'bg-yellow-700 text-white hover:bg-yellow-800'
-                        } transition`}
-                      >
-                        {isAdded ? 'Added' : 'Add Class'}
-                      </button>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             ) : (
               <p className="text-gray-500">
-                {searchTerm.trim() === "" 
-                  ? "Type in the search box to find classes" 
-                  : "No classes found matching your search term"}
+                {searchTerm.trim() === "" ? "Type in the search box to find classes" : "No classes found matching your search term"}
               </p>
             )}
           </div>
-          
+
           {/* Currently Added Classes */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Your Selected Classes</h2>
             {userClasses.length > 0 ? (
               <div className="space-y-4">
-                {userClasses.map((classItem, index) => (
-                  <div key={index} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
+                {userClasses.map((classItem) => (
+                  <div key={classItem._id} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
                     <div>
-                      <h3 className="font-semibold">{classItem.code}</h3>
-                      <p>{classItem.name}</p>
+                      <h3 className="font-semibold">{classItem.courseCode}</h3>
+                      <p>{classItem.title}</p>
                       <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
                     </div>
                     <button
-                      onClick={() => handleRemoveClass(classItem.code)}
+                      onClick={() => handleRemoveClass(classItem._id)}
                       className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                     >
                       Remove

@@ -7,6 +7,7 @@ const MIN_CREDIT_HOURS = 12;
 const DeleteClass = () => {
   const navigate = useNavigate();
   const [userClasses, setUserClasses] = useState([]);
+  const [userId, setUserId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [classToDelete, setClassToDelete] = useState(null);
   const [error, setError] = useState("");
@@ -14,14 +15,30 @@ const DeleteClass = () => {
   const [totalCredits, setTotalCredits] = useState(0);
 
   useEffect(() => {
-    // Load existing user classes
-    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
-    setUserClasses(classes);
-
-    // Calculate total credits
-    const total = classes.reduce((sum, classItem) => sum + classItem.credits, 0);
-    setTotalCredits(total);
+    // Fetch user ID from the backend
+    fetch("/api/auth/me", {
+      method: "GET",
+      credentials: "include", // Ensures cookies are sent
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.id) {
+          setUserId(data.id);
+          fetchUserClasses(data.id);
+        }
+      })
+      .catch((err) => console.error("Error fetching user:", err));
   }, []);
+
+  const fetchUserClasses = (id) => {
+    fetch(`/api/courses/user/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setUserClasses(data);
+        setTotalCredits(data.reduce((sum, classItem) => sum + classItem.credits, 0));
+      })
+      .catch((err) => console.error("Error fetching user courses:", err));
+  };
 
   const handleDeleteClick = (classItem) => {
     setClassToDelete(classItem);
@@ -30,34 +47,31 @@ const DeleteClass = () => {
   };
 
   const confirmDelete = () => {
-    if (!classToDelete) return;
+    if (!classToDelete || !userId) return;
 
-    // Calculate new total credits after deletion
     const newTotalCredits = totalCredits - classToDelete.credits;
 
-    // Check if deletion would go below minimum credit hours
     if (newTotalCredits < MIN_CREDIT_HOURS) {
       setError(`Cannot delete this class as it would put you below the minimum ${MIN_CREDIT_HOURS} credit hours requirement.`);
-      return; // Don't close modal to show error
+      return;
     }
 
-    // Remove the class from userClasses
-    const updatedClasses = userClasses.filter(c => c.code !== classToDelete.code);
-    setUserClasses(updatedClasses);
-    setTotalCredits(newTotalCredits);
-
-    // Update localStorage
-    localStorage.setItem('userClasses', JSON.stringify(updatedClasses));
-
-    // Show success message and close modal
-    setSuccess(`${classToDelete.code} has been removed from your classes.`);
-    setShowConfirmModal(false);
-    setClassToDelete(null);
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccess("");
-    }, 3000);
+    fetch(`/api/courses/user/${userId}/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: classToDelete._id }),
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setUserClasses(data.courses);
+        setTotalCredits(data.courses.reduce((sum, c) => sum + c.credits, 0));
+        setSuccess(`${classToDelete.courseCode} has been removed from your classes.`);
+        setShowConfirmModal(false);
+        setClassToDelete(null);
+        setTimeout(() => setSuccess(""), 3000);
+      })
+      .catch((err) => console.error("Error removing course:", err));
   };
 
   const handleCancelDelete = () => {
@@ -119,11 +133,11 @@ const DeleteClass = () => {
 
             {userClasses.length > 0 ? (
               <div className="space-y-4">
-                {userClasses.map((classItem, index) => (
-                  <div key={index} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
+                {userClasses.map((classItem) => (
+                  <div key={classItem._id} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
                     <div>
-                      <h3 className="font-semibold">{classItem.code}</h3>
-                      <p>{classItem.name}</p>
+                      <h3 className="font-semibold">{classItem.courseCode}</h3>
+                      <p>{classItem.title}</p>
                       <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
                     </div>
                     <button
@@ -147,14 +161,14 @@ const DeleteClass = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
-            
+
             {error ? (
               <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                 {error}
               </div>
             ) : (
               <p className="mb-4">
-                Are you sure you want to delete <span className="font-semibold">{classToDelete?.code}: {classToDelete?.name}</span>?
+                Are you sure you want to delete <span className="font-semibold">{classToDelete?.courseCode}: {classToDelete?.title}</span>?
                 <br /><br />
                 This will reduce your total credit hours from <span className="font-semibold">{totalCredits}</span> to <span className="font-semibold">{totalCredits - (classToDelete?.credits || 0)}</span>.
                 <br /><br />

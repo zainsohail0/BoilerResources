@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     googleid: {
-      type: String
+      type: String,
     },
     verified: {
       type: Boolean,
@@ -28,7 +28,13 @@ const userSchema = new mongoose.Schema(
     profileImage: {
       type: String,
       default: "",
-    }
+    },
+    enrolledCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course", // Reference to Course model
+      },
+    ],
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields automatically
