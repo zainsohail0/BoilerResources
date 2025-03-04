@@ -9,12 +9,13 @@ const AddClass = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [userClasses, setUserClasses] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // ✅ Fetch user details on component mount
   useEffect(() => {
     fetch(`${API_URL}/api/auth/me`, {
       method: "GET",
-      credentials: "include", // Ensures cookies are sent
+      credentials: "include", 
     })
       .then((res) => res.json())
       .then((data) => {
@@ -36,7 +37,7 @@ const AddClass = () => {
 
   // ✅ Fetch user-enrolled classes
   const fetchUserClasses = (id) => {
-    fetch(`${API_URL}/api/classes/user/${id}`)
+    fetch(`${API_URL}/api/courses/user/${id}`)
       .then((res) => res.json())
       .then((data) => {
         console.log("📌 User's enrolled classes:", data);
@@ -46,45 +47,36 @@ const AddClass = () => {
   };
 
   // ✅ Handle adding a class
-  const handleAddClass = (classItem) => {
+  const handleAddClass = async (classItem) => {
     if (!userId) {
       console.error("❌ User ID not found");
       return;
     }
 
-    fetch(`${API_URL}/api/classes/user/${userId}/add`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId: classItem._id }),
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("✅ Added class successfully:", data);
-        setUserClasses(data.courses);
-      })
-      .catch((err) => console.error("❌ Error adding course:", err));
-  };
+    try {
+      const response = await fetch(`${API_URL}/api/courses/user/${userId}/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: classItem._id }),
+        credentials: "include",
+      });
 
-  // ✅ Handle removing a class
-  const handleRemoveClass = (classId) => {
-    if (!userId) {
-      console.error("❌ User ID not found");
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ Error adding class:", data.error);
+        alert(`Error: ${data.error}`);
+        return;
+      }
+
+      console.log("✅ Added class successfully:", data);
+      setSuccessMessage(`${classItem.courseCode} added successfully!`);
+
+      fetchUserClasses(userId); 
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error("❌ Error adding course:", err);
     }
-
-    fetch(`${API_URL}/api/classes/user/${userId}/remove`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId: classId }),
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("✅ Removed class successfully:", data);
-        setUserClasses(data.courses);
-      })
-      .catch((err) => console.error("❌ Error removing course:", err));
   };
 
   // ✅ Handle back navigation
@@ -118,6 +110,13 @@ const AddClass = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">Search and Add Classes</h1>
 
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+              {successMessage}
+            </div>
+          )}
+
           {/* Search Bar */}
           <div className="mb-6">
             <input
@@ -149,17 +148,27 @@ const AddClass = () => {
                           <p>{classItem.title}</p>
                           <p className="text-sm text-gray-600">Credits: {classItem.creditHours}</p>
                         </div>
-                        <button
-                          onClick={() => handleAddClass(classItem)}
-                          disabled={isAdded}
-                          className={`px-4 py-2 rounded-lg ${
-                            isAdded
-                              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                              : "bg-yellow-700 text-white hover:bg-yellow-800"
-                          } transition`}
-                        >
-                          {isAdded ? "Added" : "Add Class"}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAddClass(classItem)}
+                            disabled={isAdded}
+                            className={`px-4 py-2 rounded-lg ${
+                              isAdded
+                                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                                : "bg-yellow-700 text-white hover:bg-yellow-800"
+                            } transition`}
+                          >
+                            {isAdded ? "Added" : "Add Class"}
+                          </button>
+
+                          {/* Details Button */}
+                          <button
+                            onClick={() => navigate(`/class/${classItem._id}`)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Details
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -168,32 +177,6 @@ const AddClass = () => {
               <p className="text-gray-500">
                 {searchTerm.trim() === "" ? "Type in the search box to find classes" : "No classes found matching your search term"}
               </p>
-            )}
-          </div>
-
-          {/* Currently Added Classes */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Your Selected Classes</h2>
-            {userClasses.length > 0 ? (
-              <div className="space-y-4">
-                {userClasses.map((classItem) => (
-                  <div key={classItem._id} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
-                    <div>
-                      <h3 className="font-semibold">{classItem.courseCode}</h3>
-                      <p>{classItem.title}</p>
-                      <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveClass(classItem._id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">You haven't added any classes yet.</p>
             )}
           </div>
         </div>

@@ -9,6 +9,7 @@ import VerifyEmail from "./components/VerifyEmail";
 import Home from "./components/Home";
 import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
+import ClassDetails from "./components/classDetails"; // ✅ Import ClassDetails
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -22,8 +23,7 @@ const OAuthHandler = () => {
       // Store the token in localStorage
       localStorage.setItem("token", token);
 
-      // Redirect to /dashboard instead of home for clarity - FIX THIS COMMENT
-      
+      // Redirect to home after authentication
       navigate("/home");
     }
   }, [navigate]);
@@ -44,8 +44,8 @@ function App() {
         <Route path="/profile" element={<ProfileUI />} />
         <Route path="/add-class" element={<AddClass />} />
         <Route path="/delete-class" element={<DeleteClass />} />
+        <Route path="/class/:id" element={<ClassDetails />} /> {/* ✅ New route for class details */}
         <Route path="/oauth-callback" element={<OAuthHandler />} />
-
       </Routes>
     </Router>
   );
