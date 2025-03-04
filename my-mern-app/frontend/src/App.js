@@ -8,6 +8,7 @@ import ForgotPassword from "./components/ForgotPassword";
 import Home from "./components/Home"; 
 import ResetPassword from "./components/ResetPassword";
 import AddClass from "./components/AddClass";
+import ThemeToggle from './components/ThemeToggle';
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -34,6 +35,10 @@ function App() {
     <ThemeProvider>
       <Router>
         <div className="min-h-screen bg-gray-100">
+          <header className="p-4 bg-yellow-700 text-white flex justify-between items-center">
+            <h1 className="text-xl font-bold">BoileResources</h1>
+            <ThemeToggle />
+          </header>
           <Routes>
             <Route path="/" element={<SignupForm />} />
             <Route path="/login" element={<LoginForm />} />
