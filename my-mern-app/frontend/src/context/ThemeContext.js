@@ -7,7 +7,8 @@ const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
-    document.documentElement.className = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    //document.documentElement.className = theme;
   }, [theme]);
 
   const toggleTheme = () => {

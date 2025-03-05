@@ -23,16 +23,16 @@
   }
 
   html {
-    @apply text-neutral-800;
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color var(--transition-duration), color var(--transition-duration);
   }
 
-  html.dark {
+  /*html.dark {
     @apply text-neutral-50;
     @apply bg-neutral-800;
   }
+    */
 }
 
 @import 'tailwindcss/components';

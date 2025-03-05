@@ -1,21 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext'; // Adjust path as needed
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
 
 function ThemeToggle() {
-  const [theme, setTheme] = useState('light');
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
   return (
     <button onClick={toggleTheme} className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition">

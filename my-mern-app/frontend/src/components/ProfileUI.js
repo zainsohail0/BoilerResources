@@ -100,9 +100,9 @@ const ProfileUI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white transition-colors duration-300">
       {/* Navigation Bar */}
-      <nav className="bg-yellow-700 shadow-lg">
+      <nav className="bg-yellow-700 dark:bg-gray-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -114,7 +114,7 @@ const ProfileUI = () => {
               <div className="relative">
                 <button
                   onClick={toggleDropdown}
-                  className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+                  className="text-white bg-black dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                 >
                   <svg
                     className="w-6 h-6"
@@ -132,16 +132,16 @@ const ProfileUI = () => {
                   </svg>
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-20">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-2 z-20">
                     <button
                       onClick={handleGoHome}
-                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
                       Home
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
                       Logout
                     </button>
@@ -156,9 +156,9 @@ const ProfileUI = () => {
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Profile</h2>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">Profile</h2>
           </div>
-          {message && <p className="text-center text-green-500">{message}</p>}
+          {message && <p className="text-center text-green-500 dark:text-green-400">{message}</p>}
           <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div className="flex items-center">
@@ -170,10 +170,10 @@ const ProfileUI = () => {
                   value={profile.name}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Name"
                 />
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="email" className="w-1/4">Email:</label>
@@ -184,10 +184,10 @@ const ProfileUI = () => {
                   value={profile.email}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Email"
                 />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="bio" className="w-1/4">Bio:</label>
@@ -198,10 +198,10 @@ const ProfileUI = () => {
                   value={profile.bio}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Bio"
                 />
-                {errors.bio && <p className="text-red-500 text-xs mt-1">{errors.bio}</p>}
+                {errors.bio && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.bio}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="position" className="w-1/4">Position:</label>
@@ -212,10 +212,10 @@ const ProfileUI = () => {
                   value={profile.position}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Position"
                 />
-                {errors.position && <p className="text-red-500 text-xs mt-1">{errors.position}</p>}
+                {errors.position && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.position}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="grade" className="w-1/4">Grade:</label>
@@ -226,10 +226,10 @@ const ProfileUI = () => {
                   value={profile.grade}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Grade"
                 />
-                {errors.grade && <p className="text-red-500 text-xs mt-1">{errors.grade}</p>}
+                {errors.grade && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.grade}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="major" className="w-1/4">Major:</label>
@@ -240,10 +240,10 @@ const ProfileUI = () => {
                   value={profile.major}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200" : "bg-white"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Major"
                 />
-                {errors.major && <p className="text-red-500 text-xs mt-1">{errors.major}</p>}
+                {errors.major && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.major}</p>}
               </div>
             </div>
 
