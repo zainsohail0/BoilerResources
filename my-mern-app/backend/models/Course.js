@@ -36,11 +36,12 @@ const courseSchema = new Schema({
   instructor: [{ type: String, required: true }], // Array of instructors
   description: { type: String, required: true, trim: true },
   capacity: { type: Number, default: 0 },
-  credits: [{ type: Number, required: true }], // Handles multiple credit options
+  credits: { type: Number, required: true }, // ✅ Changed to single Number instead of an array
   term: { type: String, required: true },
-  crn: [{ type: Number, required: true }], // Handles multiple CRNs
-  sched: [{ type: String, required: true }], // Schedule details (Lecture, Lab, etc.)
+  crn: [{ type: Number, required: true, default: [] }], // ✅ Default empty array
+  sched: [{ type: String, required: true, default: [] }], // ✅ Default empty array
   resources: [resourceSchema], // Embedded resources for each course
+  users: [{ type: Schema.Types.ObjectId, ref: "User", default: [] }], // ✅ Tracks enrolled users
 });
 
 const Course = mongoose.model("Course", courseSchema);

@@ -1,110 +1,155 @@
 import express from "express";
-import Class from "../models/Course.js"; // ✅ Ensure this matches your schema file
-import User from "../models/User.js"; // ✅ Import User model
+import mongoose from "mongoose";
+import Course from "../models/Course.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 
-// ✅ Get all classes
+// ✅ Get all courses
 router.get("/", async (req, res) => {
   try {
-    const classes = await Class.find();
-    res.json(classes);
+    const courses = await Course.find();
+    res.json(courses);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching classes: " + err.message });
+    res.status(500).json({ error: "Error fetching courses: " + err.message });
   }
 });
 
-// ✅ Get a class by ID
+// ✅ Get a course by MongoDB `_id`
 router.get("/:id", async (req, res) => {
   try {
-    const course = await Class.findById(req.params.id);
-    if (!course) return res.status(404).json({ error: "Class not found" });
+    const { id } = req.params;
+    console.log("📥 Received course ID from frontend:", id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ Invalid ObjectId format!");
+      return res.status(400).json({ error: "Invalid course ID format" });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      console.log("❌ Course not found in database!");
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    console.log("✅ Course found:", course);
     res.json(course);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching class: " + err.message });
+    console.error("❌ Error fetching course:", err.message);
+    res.status(500).json({ error: "Error fetching course: " + err.message });
   }
 });
 
-// ✅ Add a new class
-router.post("/", async (req, res) => {
+// ✅ Get a course by `courseCode` (Non-ObjectId field)
+router.get("/course/:courseCode", async (req, res) => {
   try {
-    const newClass = new Class(req.body);
-    await newClass.save();
-    res.status(201).json(newClass);
-  } catch (err) {
-    res.status(400).json({ error: "Error adding class: " + err.message });
-  }
-});
+    const { courseCode } = req.params;
+    console.log("📥 Received courseCode:", courseCode);
 
-// ✅ Delete a class
-router.delete("/:id", async (req, res) => {
-  try {
-    const deletedClass = await Class.findByIdAndDelete(req.params.id);
-    if (!deletedClass) return res.status(404).json({ error: "Class not found" });
-    res.json({ message: "Class deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Error deleting class: " + err.message });
-  }
-});
+    const course = await Course.findOne({ courseCode });
 
-// ========================= 👇 New Routes for Enrollment 👇 =========================
-
-// ✅ Enroll a user in a class
-router.post("/user/:userId/add", async (req, res) => {
-  try {
-    const { courseId } = req.body;
-    const user = await User.findById(req.params.userId);
-    const classItem = await Class.findById(courseId);
-
-    if (!user || !classItem) {
-      return res.status(404).json({ error: "User or class not found" });
+    if (!course) {
+      console.log("❌ Course not found!");
+      return res.status(404).json({ error: "Course not found" });
     }
 
-    // Prevent duplicate enrollments
-    if (user.enrolledClasses.includes(courseId)) {
-      return res.status(400).json({ error: "Class already enrolled" });
+    console.log("✅ Course found:", course);
+    res.json(course);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching course: " + err.message });
+  }
+});
+
+// ✅ Enroll a user in a course using `_id`
+router.post("/user/:userId/enroll", async (req, res) => {
+  try {
+    const { id } = req.body; // Course ID
+    const userId = req.params.userId; // User ID
+
+    console.log("📥 Enrollment request received:", { userId, courseId: id });
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid ID format" });
     }
 
-    user.enrolledClasses.push(courseId);
+    const user = await User.findById(userId);
+    const course = await Course.findById(id);
+
+    if (!user || !course) {
+      console.log("❌ User or course not found!");
+      return res.status(404).json({ error: "User or course not found" });
+    }
+
+    if (user.enrolledCourses.includes(id)) {
+      console.log("⚠️ User already enrolled in this course:", id);
+      return res.status(400).json({ error: "Already enrolled in this course" });
+    }
+
+    // ✅ Add course to user's enrolledCourses
+    user.enrolledCourses.push(id);
     await user.save();
 
-    res.json({ message: "Class added successfully", enrolledClasses: user.enrolledClasses });
+    // ✅ Add user to course's users array
+    course.users.push(userId);
+    await course.save();
+
+    console.log("✅ Enrollment successful:", { user: userId, course: id });
+    res.json({ message: "✅ Enrollment successful", enrolledCourses: user.enrolledCourses });
   } catch (err) {
-    res.status(500).json({ error: "Error adding class: " + err.message });
+    console.error("❌ Error enrolling in course:", err.message);
+    res.status(500).json({ error: "Error enrolling in course: " + err.message });
   }
 });
 
-// ✅ Get all enrolled classes for a user
-router.get("/user/:userId", async (req, res) => {
+// ✅ Get all enrolled courses for a user
+router.get("/user/:userId/enrolled", async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).populate("enrolledClasses");
+    const user = await User.findById(req.params.userId).populate("enrolledCourses");
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(user.enrolledClasses);
+    console.log("✅ Enrolled courses retrieved for user:", req.params.userId);
+    res.json(user.enrolledCourses);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching enrolled classes: " + err.message });
+    console.error("❌ Error fetching enrolled courses:", err.message);
+    res.status(500).json({ error: "Error fetching enrolled courses: " + err.message });
   }
 });
 
-// ✅ Remove a user from a class
+// ✅ Remove a user from a course using `_id`
 router.post("/user/:userId/remove", async (req, res) => {
   try {
-    const { courseId } = req.body;
-    const user = await User.findById(req.params.userId);
+    const { id } = req.body; // Course ID
+    const userId = req.params.userId; // User ID
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    console.log("📥 Course removal request:", { userId, courseId: id });
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid ID format" });
     }
 
-    user.enrolledClasses = user.enrolledClasses.filter((id) => id.toString() !== courseId);
+    const user = await User.findById(userId);
+    const course = await Course.findById(id);
+
+    if (!user || !course) {
+      return res.status(404).json({ error: "User or course not found" });
+    }
+
+    // ✅ Remove course from user's enrolledCourses
+    user.enrolledCourses = user.enrolledCourses.filter(courseId => courseId.toString() !== id);
     await user.save();
 
-    res.json({ message: "Class removed successfully", enrolledClasses: user.enrolledClasses });
+    // ✅ Remove user from course's users array
+    course.users = course.users.filter(userIdEntry => userIdEntry.toString() !== userId);
+    await course.save();
+
+    console.log("✅ Course removed successfully:", { user: userId, course: id });
+    res.json({ message: "✅ Course removed", enrolledCourses: user.enrolledCourses });
   } catch (err) {
-    res.status(500).json({ error: "Error removing class: " + err.message });
+    console.error("❌ Error removing course:", err.message);
+    res.status(500).json({ error: "Error removing course: " + err.message });
   }
 });
 
