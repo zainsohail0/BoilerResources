@@ -17,7 +17,7 @@ const AddClass = () => {
     const fetchCourses = async () => {
       try {
         const response = await fetch(`${API_URL}/api/courses`, {
-          credentials: "include"
+          credentials: "include",
         });
 
         if (!response.ok) {
@@ -39,13 +39,13 @@ const AddClass = () => {
       try {
         const response = await fetch(`${API_URL}/api/auth/me`, {
           method: "GET",
-          credentials: "include"
+          credentials: "include",
         });
 
         if (!response.ok) {
           if (response.status === 401) {
             setAuthError("Unauthorized: Please log in");
-            navigate('/login');
+            navigate("/login");
             return;
           }
           throw new Error(`Authentication failed with status: ${response.status}`);
@@ -58,11 +58,11 @@ const AddClass = () => {
           fetchUserClasses(userData._id);
         } else {
           setAuthError("No user information found");
-          navigate('/login');
+          navigate("/login");
         }
       } catch (error) {
         setAuthError(error.message);
-        navigate('/login');
+        navigate("/login");
       }
     };
 
@@ -71,14 +71,14 @@ const AddClass = () => {
 
   const fetchUserClasses = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/api/courses/user/${id}`, {
-        credentials: "include"
+      const response = await fetch(`${API_URL}/api/courses/user/${id}/enrolled`, {
+        credentials: "include",
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch user classes: ${response.status}`);
       }
-      
+
       const classes = await response.json();
       setUserClasses(classes);
     } catch (error) {
@@ -128,37 +128,77 @@ const AddClass = () => {
             <div className="flex items-center">
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
-            <button onClick={handleGoBack} className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition">Back to Home</button>
+            <button
+              onClick={handleGoBack}
+              className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+            >
+              Back to Home
+            </button>
           </div>
         </div>
       </nav>
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">Search and Add Classes</h1>
-          <input type="text" placeholder="Search by class code or name (e.g., CS18000 or Calculus)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700" />
+          <input
+            type="text"
+            placeholder="Search by class code or name (e.g., CS18000 or Calculus)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700"
+          />
           <div className="mb-8 mt-4">
             <h2 className="text-xl font-semibold mb-4">Search Results</h2>
             {searchResults.length > 0 ? (
               <div className="space-y-4">
-                {searchResults.filter((classItem) => classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) || classItem.title.toLowerCase().includes(searchTerm.toLowerCase())).map((classItem) => {
-                  const isAdded = userClasses.some((c) => c._id === classItem._id);
-                  return (
-                    <div key={classItem._id} className="border rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">{classItem.courseCode}</h3>
-                        <p>{classItem.title}</p>
-                        <p className="text-sm text-gray-600">Credits: {classItem.creditHours}</p>
+                {searchResults
+                  .filter(
+                    (classItem) =>
+                      classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      classItem.title.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((classItem) => {
+                    const isAdded = userClasses.some((c) => c._id === classItem._id);
+                    return (
+                      <div
+                        key={classItem._id}
+                        className="border rounded-lg p-4 flex justify-between items-center"
+                      >
+                        <div>
+                          <h3 className="font-semibold">{classItem.courseCode}</h3>
+                          <p className="text-sm text-gray-600">
+                            Credits: {classItem.creditHours || "N/A"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAddClass(classItem)}
+                            disabled={isAdded}
+                            className={`px-4 py-2 rounded-lg ${
+                              isAdded
+                                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                                : "bg-yellow-700 text-white hover:bg-yellow-800"
+                            } transition`}
+                          >
+                            {isAdded ? "Added" : "Add Class"}
+                          </button>
+                          <button
+                            onClick={() => navigate(`/class/${classItem._id}`)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Details
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleAddClass(classItem)} disabled={isAdded} className={`px-4 py-2 rounded-lg ${isAdded ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-yellow-700 text-white hover:bg-yellow-800"} transition`}>{isAdded ? "Added" : "Add Class"}</button>
-                        <button onClick={() => navigate(`/class/${classItem._id}`)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Details</button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             ) : (
-              <p className="text-gray-500">{searchTerm.trim() === "" ? "Type in the search box to find classes" : "No classes found matching your search term"}</p>
+              <p className="text-gray-500">
+                {searchTerm.trim() === ""
+                  ? "Type in the search box to find classes"
+                  : "No classes found matching your search term"}
+              </p>
             )}
           </div>
         </div>

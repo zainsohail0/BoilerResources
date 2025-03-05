@@ -9,7 +9,7 @@ import VerifyEmail from "./components/VerifyEmail";
 import Home from "./components/Home";
 import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
-import ClassDetails from "./components/classDetails"; // ✅ Ensure it's imported
+import ClassDetails from "./components/classDetails"; // ✅ Ensure it's correctly imported
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ function App() {
         <Route path="/profile" element={<ProfileUI />} />
         <Route path="/add-class" element={<AddClass />} />
         <Route path="/delete-class" element={<DeleteClass />} />
-        <Route path="/class/:_id" element={<ClassDetails />} /> {/* ✅ Fixed Route */}
+        <Route path="/class/:id" element={<ClassDetails />} /> {/* ✅ Fixed Route */}
         <Route path="/oauth-callback" element={<OAuthHandler />} />
       </Routes>
     </Router>
