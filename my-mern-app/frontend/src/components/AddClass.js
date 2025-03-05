@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 // Mock data for demonstration purposes
 const availableClasses = [
@@ -61,18 +62,19 @@ const AddClass = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
       {/* Navigation Bar */}
-      <nav className="bg-yellow-700 shadow-lg">
+      <nav className="bg-yellow-700 dark:bg-gray-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
             <div className="flex items-center">
+              <ThemeToggle />
               <button
                 onClick={handleGoBack}
-                className="text-white bg-black px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+                className="text-white bg-black dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition"
               >
                 Back to Home
               </button>
@@ -83,8 +85,8 @@ const AddClass = () => {
       
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-6">Search and Add Classes</h1>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Search and Add Classes</h1>
           
           {/* Search Bar */}
           <div className="mb-6">
@@ -93,23 +95,23 @@ const AddClass = () => {
               placeholder="Search by class code or name (e.g., CS18000 or Calculus)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700 dark:focus:ring-yellow-500"
             />
           </div>
           
           {/* Search Results */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Search Results</h2>
             {searchResults.length > 0 ? (
               <div className="space-y-4">
                 {searchResults.map((classItem) => {
                   const isAdded = userClasses.some(c => c.code === classItem.code);
                   return (
-                    <div key={classItem.id} className="border rounded-lg p-4 flex justify-between items-center">
+                    <div key={classItem.id} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50 dark:bg-gray-700">
                       <div>
-                        <h3 className="font-semibold">{classItem.code}</h3>
-                        <p>{classItem.name}</p>
-                        <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{classItem.code}</h3>
+                        <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
                       </div>
                       <button
                         onClick={() => handleAddClass(classItem)}
@@ -117,7 +119,7 @@ const AddClass = () => {
                         className={`px-4 py-2 rounded-lg ${
                           isAdded 
                             ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                            : 'bg-yellow-700 text-white hover:bg-yellow-800'
+                            : 'bg-yellow-700 text-white hover:bg-yellow-800 dark:bg-yellow-600 dark:hover:bg-yellow-700'
                         } transition`}
                       >
                         {isAdded ? 'Added' : 'Add Class'}
@@ -127,7 +129,7 @@ const AddClass = () => {
                 })}
               </div>
             ) : (
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-gray-400">
                 {searchTerm.trim() === "" 
                   ? "Type in the search box to find classes" 
                   : "No classes found matching your search term"}
@@ -137,19 +139,19 @@ const AddClass = () => {
           
           {/* Currently Added Classes */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your Selected Classes</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Your Selected Classes</h2>
             {userClasses.length > 0 ? (
               <div className="space-y-4">
                 {userClasses.map((classItem, index) => (
-                  <div key={index} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
+                  <div key={index} className="border rounded-lg p-4 flex justify-between items-center bg-gray-50 dark:bg-gray-700">
                     <div>
-                      <h3 className="font-semibold">{classItem.code}</h3>
-                      <p>{classItem.name}</p>
-                      <p className="text-sm text-gray-600">Credits: {classItem.credits}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{classItem.code}</h3>
+                      <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
                     </div>
                     <button
                       onClick={() => handleRemoveClass(classItem.code)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition"
                     >
                       Remove
                     </button>
@@ -157,7 +159,7 @@ const AddClass = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">You haven't added any classes yet.</p>
+              <p className="text-gray-500 dark:text-gray-400">You haven't added any classes yet.</p>
             )}
           </div>
         </div>
