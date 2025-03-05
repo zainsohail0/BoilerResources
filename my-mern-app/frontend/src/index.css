@@ -1,4 +1,14 @@
-@import 'tailwindcss/base';
+/*@import 'tailwindcss/base';*/
+/* Define the custom font */
+@font-face {
+  font-family: 'United Sans';
+  src: url('../public/fonts/UnitedSansRgBk.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+/* Keep default Tailwind setup */
+@tailwind base;
 
 @layer base {
   :root {
@@ -28,16 +38,15 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Keep default system fonts for body */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 const ProfileUI = () => {
   const navigate = useNavigate();
@@ -109,6 +110,7 @@ const ProfileUI = () => {
             </div>
             <div className="relative flex items-center gap-4">
               <span className="text-white">Welcome, {user.username || 'User'}!</span>
+              <ThemeToggle />
               <div className="relative">
                 <button
                   onClick={toggleDropdown}
@@ -250,7 +252,7 @@ const ProfileUI = () => {
                 <>
                   <button
                     type="submit"
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                   >
                     Save
                   </button>
@@ -266,7 +268,7 @@ const ProfileUI = () => {
                 <button
                   type="button"
                   onClick={handleEdit}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Edit
                 </button>

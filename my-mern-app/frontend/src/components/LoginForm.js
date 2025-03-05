@@ -1,49 +1,64 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import "tw-elements";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import { FcGoogle } from "react-icons/fc";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState({ email: "", password: "", general: "" });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
+  const location = useLocation();
 
+  // Check if user is already logged in (session-based authentication)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (token) {
-      localStorage.setItem("token", token);
-      setIsAuthenticated(true);
-      navigate("/home");
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include", // Ensures session is checked
+        });
+  
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Session data:", data); // Debug log
+          setIsAuthenticated(true);
+  
+          // Only redirect if not already on /home
+          if (window.location.pathname !== "/home") {
+            navigate("/home");
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    };
+  
+    checkAuth();
   }, [navigate]);
 
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // Check if user was just verified
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const verified = query.get("verified");
+    
+    if (verified === "true") {
+      setSuccess("Email verified successfully! You can now log in.");
+    }
+  }, [location]);
 
+  // Handle Login
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let validationErrors = { email: "", password: "", general: "" };
-
-    if (!email) {
-      validationErrors.email = "Email is required.";
-    } else if (!isValidEmail(email)) {
-      validationErrors.email = "Please enter a valid email address.";
-    }
-
-    if (!password) {
-      validationErrors.password = "Password is required.";
-    }
-
-    if (validationErrors.email || validationErrors.password) {
-      setError(validationErrors);
-      return;
-    }
-
-    setError({ email: "", password: "", general: "" });
+    setError("");
+    setSuccess("");
+    setNeedsVerification(false);
+    setIsSubmitting(true);
 
     try {
       const response = await fetch("http://localhost:5001/api/auth/login", {
@@ -52,90 +67,111 @@ const LoginForm = () => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensures session cookie is stored
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        if (rememberMe) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-        } else {
-          sessionStorage.setItem("token", data.token);
-          sessionStorage.setItem("user", JSON.stringify(data.user));
-        }
         setIsAuthenticated(true);
-        navigate("/home");
+        navigate("/home"); // Redirect on success
+      } else if (data.requiresVerification) {
+        setNeedsVerification(true);
       } else {
-        setError({ ...error, general: data.message || "Login failed" });
+        setError(data.message || "Login failed. Please check your credentials.");
       }
     } catch (err) {
-      setError({ ...error, general: "Connection error. Please try again." });
+      console.error("Login error:", err);
+      setError("Connection error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const resendVerificationEmail = async () => {
+    setIsSubmitting(true);
+    setError("");
+    setSuccess("");
+    
+    try {
+      const response = await axios.post("http://localhost:5001/api/auth/resend-verification", {
+        email,
+      });
+      
+      if (response.status === 200) {
+        setSuccess("Verification email sent. Please check your inbox.");
+      }
+    } catch (err) {
+      console.error("Resend verification error:", err);
+      setError(err.response?.data?.message || "Failed to resend verification email.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Google OAuth Login
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5001/api/auth/google";
-  };
-
-  const handleForgotPassword = () => {
-    navigate("/forgot-password");
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch("http://localhost:5001/api/auth/logout", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("user");
-      localStorage.removeItem("user");
-      setIsAuthenticated(false);
-      navigate("/");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
-
-  const handleGoToSignUp = () => {
-    navigate("/");
   };
 
   return (
     <div
       className="h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/background.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg8.png')" }}
     >
-      <div className="w-full bg-yellow-700 py-4 text-center text-white text-xl font-bold">
-        BoileResources
+      {/* Top Bar */}
+      <div
+        style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+        className="w-full py-4 text-center text-3xl font-bold"
+      >
+        Boiler Resources
       </div>
 
-      <div className="flex justify-center items-center h-full">
+      <div className="flex justify-center items-center h-[90%]">
         {isAuthenticated ? (
           <div className="flex flex-col items-center">
             <p className="mb-4 text-lg">You are logged in!</p>
             <button
-              onClick={handleLogout}
-              className="text-white py-2 px-6 rounded-lg bg-red-500 hover:bg-red-600"
+              onClick={() => navigate("/home")}
+              className="text-white py-2 px-6 rounded-lg bg-yellow-600 hover:bg-yellow-700"
             >
-              Logout
+              Go to Dashboard
             </button>
           </div>
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white p-6 rounded-lg shadow-md w-96 bg-opacity-90 backdrop-blur-lg"
+            className="bg-white p-6 rounded-lg shadow-2xl w-96 bg-opacity-90 backdrop-blur-4xl"
           >
             <h2 className="text-xl font-bold text-center mb-4">Login</h2>
 
-            {error.general && (
+            {/* Success Message */}
+            {success && (
+              <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded">
+                {success}
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
               <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
-                {error.general}
+                {error}
+              </div>
+            )}
+
+            {/* Needs Verification Message */}
+            {needsVerification && (
+              <div className="mb-4 p-2 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded">
+                <p>Your email address has not been verified.</p>
+                <button
+                  type="button"
+                  onClick={resendVerificationEmail}
+                  className="mt-2 px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+                  disabled={isSubmitting}
+                >
+                  Resend Verification Email
+                </button>
               </div>
             )}
 
@@ -145,16 +181,14 @@ const LoginForm = () => {
                 Email
               </label>
               <input
-                type="text"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border ${
-                  error.email ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
+                          focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                disabled={isSubmitting}
               />
-              {error.email && (
-                <p className="text-red-500 text-xs mt-1">{error.email}</p>
-              )}
             </div>
 
             {/* Password Input */}
@@ -166,13 +200,11 @@ const LoginForm = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border ${
-                  error.password ? "border-red-500" : "border-gray-300"
-                } rounded-lg shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500`}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm
+                          focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                disabled={isSubmitting}
               />
-              {error.password && (
-                <p className="text-red-500 text-xs mt-1">{error.password}</p>
-              )}
             </div>
 
             {/* Remember Me & Forgot Password */}
@@ -183,16 +215,15 @@ const LoginForm = () => {
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-600 border-gray-300 rounded"
                 />
                 <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
                   Remember Me
                 </label>
               </div>
-
               <button
                 type="button"
-                onClick={handleForgotPassword}
+                onClick={() => navigate("/forgot-password")}
                 className="text-sm text-blue-600 hover:underline focus:outline-none"
               >
                 Forgot Password?
@@ -200,14 +231,15 @@ const LoginForm = () => {
             </div>
 
             {/* Login Button */}
-            <button
-              type="submit"
-              className="w-full text-white py-2 rounded-lg transition
-                      bg-gradient-to-r from-black to-yellow-500
-                      hover:from-gray-800 hover:to-yellow-400"
-            >
-              Login
-            </button>
+            <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
+              <button 
+                type="submit"
+                className="w-full bg-white text-black py-2 rounded-lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Logging In..." : "Login"}
+              </button>
+            </div>
 
             {/* Google OAuth Button */}
             <div className="relative mt-4">
@@ -215,20 +247,23 @@ const LoginForm = () => {
                 type="button"
                 onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-lg
-                        shadow-sm bg-white text-gray-700 hover:bg-gray-100 transition"
+                          shadow-sm text-black hover:bg-gray-100 transition"
+                style={{ backgroundColor: "#cfb991" }}
+                disabled={isSubmitting}
               >
-                <FcGoogle className="text-xl mr-2" /> Sign in with Google
+                <FcGoogle className="text-2xl mr-2"/> Sign in with Google
               </button>
             </div>
 
             {/* Back to Sign Up Button */}
             <div className="text-center mt-4">
+              <span className="text-sm text-gray-600">Don't have an account? </span>
               <button
                 type="button"
-                onClick={handleGoToSignUp}
+                onClick={() => navigate("/")} 
                 className="text-sm text-blue-600 hover:underline focus:outline-none"
               >
-                Don't have an account? Sign Up
+                Sign Up
               </button>
             </div>
           </form>
