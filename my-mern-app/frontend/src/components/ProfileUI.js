@@ -6,9 +6,9 @@ import ThemeToggle from './ThemeToggle';
 const ProfileUI = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState({
-    name: '',
+    username: '',
     email: '',
-    bio: '',
+    college: '',
     position: '',
     grade: '',
     major: '',
@@ -18,22 +18,39 @@ const ProfileUI = () => {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true);
       try {
-        const userId = localStorage.getItem('userId'); // Assuming you store the user ID in localStorage
-        const response = await axios.get(`/api/auth/profile/${userId}`);
-        setProfile(response.data);
-        setOriginalProfile(response.data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+        const res = await fetch("http://localhost:5001/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Fetched user data:", data); // Debugging log
+          setProfile(data);
+          setOriginalProfile(data);
+          setUser(data); // Set user data for header
+        } else {
+          setUser(null);
+          navigate("/login"); // Redirect if not authenticated
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        setUser(null);
+        navigate("/login");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     console.log("isEditing state changed:", isEditing);
@@ -46,12 +63,7 @@ const ProfileUI = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!profile.name) newErrors.name = "Name is required";
-    if (!profile.email) newErrors.email = "Email is required";
-    if (!profile.bio) newErrors.bio = "Bio is required";
-    if (!profile.position) newErrors.position = "Position is required";
-    if (!profile.grade) newErrors.grade = "Grade is required";
-    if (!profile.major) newErrors.major = "Major is required";
+    // Remove required validation for now
     return newErrors;
   };
 
@@ -64,7 +76,8 @@ const ProfileUI = () => {
     }
 
     try {
-      const response = await axios.put('/api/profile/update', profile);
+      const userId = localStorage.getItem('userId'); // Assuming you store the user ID in localStorage
+      const response = await axios.put(`/api/profile/${userId}`, profile);
       setMessage(response.data.message);
       setOriginalProfile(profile); // Update original profile to the new saved profile
       setIsEditing(false);
@@ -99,6 +112,15 @@ const ProfileUI = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
+  // If still loading, show a loading indicator
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white transition-colors duration-300">
       {/* Navigation Bar */}
@@ -109,7 +131,11 @@ const ProfileUI = () => {
               <span className="text-white text-xl font-bold">BoileResources</span>
             </div>
             <div className="relative flex items-center gap-4">
-              <span className="text-white">Welcome, {user.username || 'User'}!</span>
+              {user ? (
+                <span className="text-white">Welcome, {user.username}!</span>
+              ) : (
+                <span className="text-white">Welcome, User!</span>
+              )}
               <ThemeToggle />
               <div className="relative">
                 <button
@@ -162,18 +188,18 @@ const ProfileUI = () => {
           <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div className="flex items-center">
-                <label htmlFor="name" className="w-1/4">Name:</label>
+                <label htmlFor="username" className="w-1/4">Username:</label>
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  value={profile.name}
+                  value={profile.username}
                   onChange={handleChange}
                   disabled={!isEditing}
                   className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Name"
+                  placeholder="Username"
                 />
-                {errors.name && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.name}</p>}
+                {errors.username && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.username}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="email" className="w-1/4">Email:</label>
@@ -188,20 +214,6 @@ const ProfileUI = () => {
                   placeholder="Email"
                 />
                 {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
-              </div>
-              <div className="flex items-center">
-                <label htmlFor="bio" className="w-1/4">Bio:</label>
-                <input
-                  id="bio"
-                  name="bio"
-                  type="text"
-                  value={profile.bio}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Bio"
-                />
-                {errors.bio && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.bio}</p>}
               </div>
               <div className="flex items-center">
                 <label htmlFor="position" className="w-1/4">Position:</label>
@@ -240,10 +252,24 @@ const ProfileUI = () => {
                   value={profile.major}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
                   placeholder="Major"
                 />
                 {errors.major && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.major}</p>}
+              </div>
+              <div className="flex items-center">
+                <label htmlFor="college" className="w-1/4">College:</label>
+                <input
+                  id="college"
+                  name="college"
+                  type="text"
+                  value={profile.college}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                  placeholder="College"
+                />
+                {errors.college && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.college}</p>}
               </div>
             </div>
 
