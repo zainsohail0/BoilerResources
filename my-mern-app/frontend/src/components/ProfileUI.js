@@ -12,6 +12,7 @@ const ProfileUI = () => {
     position: '',
     grade: '',
     major: '',
+    profileImage: '',
   });
   const [originalProfile, setOriginalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
@@ -20,6 +21,10 @@ const ProfileUI = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [showFileInput, setShowFileInput] = useState(false);
+
+  const defaultAvatar = '/images/225-default-avatar.png'; // Relative URL to the image in the public directory
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -61,6 +66,10 @@ const ProfileUI = () => {
     setProfile({ ...profile, [name]: value });
   };
 
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
+  };
+
   const validate = () => {
     const newErrors = {};
     // Remove required validation for now
@@ -69,20 +78,49 @@ const ProfileUI = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setMessage("");
+    setErrors({});
+
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
+    const userId = user?._id; // Get user ID from state
+
+    if (!userId) {
+      setMessage("User ID not found");
+      return;
+    }
+
     try {
-      const userId = localStorage.getItem('userId'); // Assuming you store the user ID in localStorage
-      const response = await axios.put(`/api/profile/${userId}`, profile);
-      setMessage(response.data.message);
-      setOriginalProfile(profile); // Update original profile to the new saved profile
+      let imageUrl = profile.profileImage;
+
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('upload_preset', 'your_upload_preset'); // Replace with your Cloudinary upload preset
+
+        const uploadRes = await axios.post('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', formData); // Replace with your Cloudinary URL
+        imageUrl = uploadRes.data.secure_url;
+      }
+
+      const updatedProfile = { ...profile, profileImage: imageUrl };
+
+      const response = await axios.put(
+        `http://localhost:5001/api/auth/profile/${userId}`,
+        updatedProfile,
+        { withCredentials: true }
+      );
+
+      setMessage("Profile updated successfully!");
+      setOriginalProfile(response.data.user); // Update original profile
+      setProfile(response.data.user); // Reflect changes in UI
       setIsEditing(false);
+      setShowFileInput(false); // Hide file input after saving
     } catch (error) {
-      setMessage(error.response.data.message || 'Error updating profile');
+      setMessage(error.response?.data?.message || "Error updating profile");
     }
   };
 
@@ -91,6 +129,7 @@ const ProfileUI = () => {
     setProfile(originalProfile); // Reset profile to original values
     setIsEditing(false);
     setMessage(''); // Clear the message
+    setShowFileInput(false); // Hide file input on cancel
   };
 
   const handleEdit = () => {
@@ -110,6 +149,10 @@ const ProfileUI = () => {
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
+  };
+
+  const handleEditPicture = () => {
+    setShowFileInput(true);
   };
 
   // If still loading, show a loading indicator
@@ -180,127 +223,177 @@ const ProfileUI = () => {
       </nav>
 
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+        <div className="max-w-4xl w-full space-y-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">Profile</h2>
           </div>
           {message && <p className="text-center text-green-500 dark:text-green-400">{message}</p>}
-          <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div className="flex items-center">
-                <label htmlFor="username" className="w-1/4">Username:</label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  value={profile.username}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Username"
+          <div className="flex">
+            <div className="w-1/3 flex flex-col items-center">
+              <div className="flex items-center justify-center mt-4">
+                <img
+                  src={profile.profileImage || defaultAvatar}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover"
                 />
-                {errors.username && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.username}</p>}
               </div>
-              <div className="flex items-center">
-                <label htmlFor="email" className="w-1/4">Email:</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Email"
-                />
-                {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
-              </div>
-              <div className="flex items-center">
-                <label htmlFor="position" className="w-1/4">Position:</label>
-                <input
-                  id="position"
-                  name="position"
-                  type="text"
-                  value={profile.position}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Position"
-                />
-                {errors.position && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.position}</p>}
-              </div>
-              <div className="flex items-center">
-                <label htmlFor="grade" className="w-1/4">Grade:</label>
-                <input
-                  id="grade"
-                  name="grade"
-                  type="text"
-                  value={profile.grade}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Grade"
-                />
-                {errors.grade && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.grade}</p>}
-              </div>
-              <div className="flex items-center">
-                <label htmlFor="major" className="w-1/4">Major:</label>
-                <input
-                  id="major"
-                  name="major"
-                  type="text"
-                  value={profile.major}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="Major"
-                />
-                {errors.major && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.major}</p>}
-              </div>
-              <div className="flex items-center">
-                <label htmlFor="college" className="w-1/4">College:</label>
-                <input
-                  id="college"
-                  name="college"
-                  type="text"
-                  value={profile.college}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
-                  placeholder="College"
-                />
-                {errors.college && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.college}</p>}
-              </div>
-            </div>
-
-            <div>
-              {isEditing ? (
-                <>
-                  <button
-                    type="submit"
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                  >
-                    Save
-                  </button>
+              <div className="mt-4">
+                {showFileInput ? (
+                  <>
+                    <input
+                      id="profileImage"
+                      name="profileImage"
+                      type="file"
+                      onChange={handleFileChange}
+                      className="mt-1 block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                    />
+                    <div className="flex justify-between mt-2">
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        className="group relative w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="group relative w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ml-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
                   <button
                     type="button"
-                    onClick={handleCancel}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-2"
+                    onClick={handleEditPicture}
+                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Cancel
+                    Edit Picture
                   </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleEdit}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Edit
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </form>
+            <div className="w-2/3 pl-8"> {/* Added padding-left for spacing */}
+              <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
+                <div className="rounded-md shadow-sm space-y-4"> {/* Added space-y-4 for spacing between fields */}
+                  <div className="flex items-center">
+                    <label htmlFor="username" className="w-1/4">Username:</label>
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      value={profile.username}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="Username"
+                    />
+                    {errors.username && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.username}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label htmlFor="email" className="w-1/4">Email:</label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={profile.email}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="Email"
+                    />
+                    {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label htmlFor="position" className="w-1/4">Position:</label>
+                    <input
+                      id="position"
+                      name="position"
+                      type="text"
+                      value={profile.position}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="Position"
+                    />
+                    {errors.position && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.position}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label htmlFor="grade" className="w-1/4">Grade:</label>
+                    <input
+                      id="grade"
+                      name="grade"
+                      type="text"
+                      value={profile.grade}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="Grade"
+                    />
+                    {errors.grade && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.grade}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label htmlFor="major" className="w-1/4">Major:</label>
+                    <input
+                      id="major"
+                      name="major"
+                      type="text"
+                      value={profile.major}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="Major"
+                    />
+                    {errors.major && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.major}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label htmlFor="college" className="w-1/4">College:</label>
+                    <input
+                      id="college"
+                      name="college"
+                      type="text"
+                      value={profile.college}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      placeholder="College"
+                    />
+                    {errors.college && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.college}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="submit"
+                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-2"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleEdit}
+                      className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>

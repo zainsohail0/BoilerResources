@@ -28,6 +28,22 @@ const userSchema = new mongoose.Schema(
     profileImage: {
       type: String,
       default: "",
+    },
+    position: {
+      type: String,
+      default: "",
+    },
+    grade: {
+      type: String,
+      default: "",
+    },
+    major: {
+      type: String,
+      default: "",
+    },
+    college: {
+      type: String,
+      default: "",
     }
   },
   {
