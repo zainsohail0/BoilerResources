@@ -168,7 +168,11 @@ const Home = () => {
           {userClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userClasses.map((classItem) => (
-                <div key={classItem._id} className="border rounded-lg p-4 bg-gray-50">
+                <div 
+                  key={classItem._id} 
+                  className="border rounded-lg p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+                  onClick={() => navigate(`/class/${classItem._id}`)}
+                >
                   <h3 className="font-semibold text-lg">{classItem.courseCode}</h3>
                   <p>{classItem.title}</p>
                   <p className="text-sm text-gray-600">Credits: {classItem.creditHours}</p>
