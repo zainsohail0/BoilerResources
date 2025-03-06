@@ -35,6 +35,22 @@ const userSchema = new mongoose.Schema(
         ref: "Course", // Reference to Course model
       },
     ],
+    position: {
+      type: String,
+      default: "",
+    },
+    grade: {
+      type: String,
+      default: "",
+    },
+    major: {
+      type: String,
+      default: "",
+    },
+    college: {
+      type: String,
+      default: "",
+    }
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields automatically
