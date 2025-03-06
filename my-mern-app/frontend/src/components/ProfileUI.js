@@ -87,7 +87,7 @@ const ProfileUI = () => {
       return;
     }
   
-    const userId = user?._id; // Get user ID from state
+    const userId = user?._id;
   
     if (!userId) {
       setMessage("User ID not found");
@@ -96,6 +96,8 @@ const ProfileUI = () => {
   
     try {
       // If there's a file to upload, send it to the backend upload endpoint first
+      let updatedProfile = {...profile}; // Create a copy of the current profile
+      
       if (selectedFile) {
         const formData = new FormData();
         formData.append('profilePicture', selectedFile);
@@ -115,31 +117,21 @@ const ProfileUI = () => {
         // Get the profile picture URL from the response
         const imageUrl = uploadRes.data.profilePicture;
         
-        // Update profile with the new image URL
-        setProfile({ ...profile, profileImage: imageUrl });
-        
-        // Update user profile with all data including new image URL
-        const response = await axios.put(
-          `http://localhost:5001/api/auth/profile/${userId}`,
-          { ...profile, profileImage: imageUrl },
-          { withCredentials: true }
-        );
-  
-        setMessage("Profile updated successfully!");
-        setOriginalProfile(response.data.user);
-        setProfile(response.data.user);
-      } else {
-        // Just update profile data without changing the image
-        const response = await axios.put(
-          `http://localhost:5001/api/auth/profile/${userId}`,
-          profile,
-          { withCredentials: true }
-        );
-  
-        setMessage("Profile updated successfully!");
-        setOriginalProfile(response.data.user);
-        setProfile(response.data.user);
+        // Update our local copy with the new image URL
+        updatedProfile.profileImage = imageUrl;
       }
+      
+      // Now send the updated profile (with the new image URL if there was one)
+      const response = await axios.put(
+        `http://localhost:5001/api/auth/profile/${userId}`,
+        updatedProfile,
+        { withCredentials: true }
+      );
+  
+      // Update both profile and originalProfile with the response data
+      setMessage("Profile updated successfully!");
+      setProfile(response.data.user);
+      setOriginalProfile(response.data.user);
       
       setIsEditing(false);
       setShowFileInput(false);

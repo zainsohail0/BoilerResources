@@ -407,12 +407,6 @@ router.post("/reset-password/:id/:token", async (req, res) => {
   }
 });
 
-// Configure Cloudinary
-const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
 // Configure Cloudinary with environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -436,36 +430,58 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
-module.exports = { upload, cloudinary };
 
 // Upload Profile Picture Route
 router.post("/upload-profile-picture", upload.single("profilePicture"), async (req, res) => {
-  try{
-    const image = req.body.image;
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ 
+        message: "No file uploaded", 
+        success: false 
+      });
+    }
 
-    //UPLOAD THE IMAGE TO CLODINARY
-    const uploadedImage = await cloudinary.uploader.upload(image, {
-        folder: 'profile_pictures'
-    });
+    // Get the user ID from the request
+    const userId = req.body.userId;
+    
+    // Use the secure_url from the uploaded file
+    const imageUrl = req.file.path || (req.file.secure_url ? req.file.secure_url : null);
+    
+    if (!imageUrl) {
+      return res.status(500).json({
+        message: "Failed to get image URL from Cloudinary",
+        success: false
+      });
+    }
 
-    //UPDATE THE USER MODEL & SET THE PROFILE PIC PROPERTY
+    // Update the user with the correct ID
     const user = await User.findByIdAndUpdate(
-        {_id: req.body.userId},
-        { profilePic: uploadedImage.secure_url},
-        { new: true}
+      userId,
+      { profileImage: imageUrl },
+      { new: true } // Return the updated document
     );
 
-    res.send({
-        message: 'Profic picture uploaded successfully',
-        success: true,
-        data: user
-    })
-}catch(error){
-    res.send({
-        message: error.message,
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
         success: false
-    })
-}
+      });
+    }
+
+    res.status(200).json({
+      message: 'Profile picture uploaded successfully',
+      success: true,
+      profilePicture: imageUrl,
+      user: user
+    });
+  } catch (error) {
+    console.error("Profile picture upload error:", error);
+    res.status(500).json({
+      message: error.message,
+      success: false
+    });
+  }
 });
 
 // update profile
@@ -495,24 +511,6 @@ router.put("/profile/:userId", async (req, res) => {
   } catch (err) {
     console.error("Profile update error:", err);
     res.status(500).json({ message: "Error updating profile", error: err.message });
-  }
-});
-
-//testing
-router.post("/upload-profile-picture", (req, res, next) => {
-  console.log("Upload request received", req.body);
-  next();
-}, upload.single("profilePicture"), async (req, res) => {
-  try {
-    console.log("File uploaded", req.file);
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    // Rest of your handler...
-  } catch (err) {
-    console.error("Upload error details:", err);
-    res.status(500).json({ message: "Error uploading profile picture", error: err.message });
   }
 });
 
