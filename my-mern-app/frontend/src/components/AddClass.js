@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 const API_URL = "http://localhost:5001";
 const MAX_CREDIT_HOURS = 23;
@@ -357,6 +358,7 @@ const AddClass = () => {
   };
 
   return (
+
     <div className="min-h-screen bg-gray-100">
       <div ref={topRef}></div>
       <nav className="bg-yellow-700 shadow-lg">
@@ -417,7 +419,7 @@ const AddClass = () => {
               placeholder="Search by class code or name (e.g., CS18000 or Calculus)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-700 dark:focus:ring-yellow-500"
             />
           </div>
 

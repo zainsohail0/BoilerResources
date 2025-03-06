@@ -7,6 +7,9 @@ import "../config/passport.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 const router = express.Router();
 dotenv.config(); // Load environment variables
@@ -416,6 +419,113 @@ router.post("/reset-password/:id/:token", async (req, res) => {
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ Status: "Server error", error: err.message });
+  }
+});
+
+// Configure Cloudinary with environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure Multer for Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'profile_pictures', // Cloudinary folder
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 200, height: 200, crop: 'thumb' }],
+  },
+});
+
+// Initialize multer with storage configuration
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+
+// Upload Profile Picture Route
+router.post("/upload-profile-picture", upload.single("profilePicture"), async (req, res) => {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ 
+        message: "No file uploaded", 
+        success: false 
+      });
+    }
+
+    // Get the user ID from the request
+    const userId = req.body.userId;
+    
+    // Use the secure_url from the uploaded file
+    const imageUrl = req.file.path || (req.file.secure_url ? req.file.secure_url : null);
+    
+    if (!imageUrl) {
+      return res.status(500).json({
+        message: "Failed to get image URL from Cloudinary",
+        success: false
+      });
+    }
+
+    // Update the user with the correct ID
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: imageUrl },
+      { new: true } // Return the updated document
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        success: false
+      });
+    }
+
+    res.status(200).json({
+      message: 'Profile picture uploaded successfully',
+      success: true,
+      profilePicture: imageUrl,
+      user: user
+    });
+  } catch (error) {
+    console.error("Profile picture upload error:", error);
+    res.status(500).json({
+      message: error.message,
+      success: false
+    });
+  }
+});
+
+// update profile
+router.put("/profile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Update user fields
+    if (updates.username) user.username = updates.username;
+    if (updates.email) user.email = updates.email;
+    if (updates.college) user.college = updates.college;
+    if (updates.position) user.position = updates.position;
+    if (updates.grade) user.grade = updates.grade;
+    if (updates.major) user.major = updates.major;
+    if (updates.profileImage) user.profileImage = updates.profileImage;
+    
+    await user.save();
+    
+    res.json({ message: "Profile updated successfully", user });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ message: "Error updating profile", error: err.message });
   }
 });
 
