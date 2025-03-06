@@ -60,6 +60,25 @@ router.get("/course/:courseCode", async (req, res) => {
   }
 });
 
+// ✅ NEW ENDPOINT: Get courses by professor name
+router.get("/professor/:name", async (req, res) => {
+  try {
+    const { name } = req.params;
+    console.log("📥 Searching for courses by professor:", name);
+
+    // Using regex for case-insensitive partial matching
+    const courses = await Course.find({ 
+      professor: { $regex: name, $options: "i" } 
+    });
+
+    console.log(`✅ Found ${courses.length} courses for professor ${name}`);
+    res.json(courses);
+  } catch (err) {
+    console.error("❌ Error fetching courses by professor:", err.message);
+    res.status(500).json({ error: "Error fetching courses: " + err.message });
+  }
+});
+
 // ✅ Enroll a user in a course using `_id`
 router.post("/user/:userId/enroll", async (req, res) => {
   try {

@@ -94,11 +94,11 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
-      <nav className="bg-yellow-700 shadow-lg">
+      <nav className="bg-black shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">BoileResources</span>
+              <span className="text-white text-xl font-bold">Boiler Resources</span>
             </div>
             <div className="relative flex items-center gap-4">
               {user ? (
@@ -133,7 +133,7 @@ const Home = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-4">Welcome to BoileResources</h1>
+          <h1 className="text-2xl font-bold mb-4">Welcome to Boiler Resources</h1>
           <p className="text-gray-600">This is your dashboard where you can access and manage your resources.</p>
         </div>
 
