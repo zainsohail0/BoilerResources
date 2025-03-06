@@ -195,27 +195,17 @@ const Home = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to Boiler Resources</h1>
-
           <p className="text-gray-600 dark:text-gray-400">
             This is your dashboard where you can access and manage your resources.
           </p>
         </div>
-
-
-        {/* User's Classes Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Classes</h2>
 
         {/* User's Current Classes Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Enrolled Classes</h2>
-
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Total Credits: {totalCredits} 
                 {totalCredits < MIN_CREDIT_HOURS && 
