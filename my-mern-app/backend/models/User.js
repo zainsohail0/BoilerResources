@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     googleid: {
-      type: String
+      type: String,
     },
     verified: {
       type: Boolean,
@@ -29,6 +29,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    enrolledCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course", // Reference to Course model
+      },
+    ],
     position: {
       type: String,
       default: "",

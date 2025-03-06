@@ -2,46 +2,43 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
-// Minimum credit hours threshold
+const API_URL = "http://localhost:5001"; 
 const MIN_CREDIT_HOURS = 12;
 
 const Home = () => {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
+  const [completedClasses, setCompletedClasses] = useState([]);
   const [user, setUser] = useState(null);
   const [totalCredits, setTotalCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
-    // Load user classes from localStorage
-    const classes = JSON.parse(localStorage.getItem('userClasses')) || [];
-    setUserClasses(classes);
-    
-    // Calculate total credits
-    const total = classes.reduce((sum, classItem) => sum + classItem.credits, 0);
-    setTotalCredits(total);
+    // Load completed classes from localStorage
+    const completed = JSON.parse(localStorage.getItem('completedClasses')) || [];
+    setCompletedClasses(completed);
   }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("http://localhost:5001/api/auth/me", {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
           method: "GET",
           credentials: "include",
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data); // Store user data in state
-        } else {
-          setUser(null);
-          navigate("/login"); // Redirect if not authenticated
+        if (!res.ok) {
+          throw new Error("Authentication failed");
         }
+
+        const data = await res.json();
+        setUser(data);
+        fetchUserClasses(data._id);
       } catch (err) {
-        console.error("Auth check failed:", err);
-        setUser(null);
+        console.error("❌ Auth check failed:", err);
         navigate("/login");
       } finally {
         setIsLoading(false);
@@ -51,50 +48,82 @@ const Home = () => {
     fetchUser();
   }, [navigate]);
 
-  const handleLogout = async () => {
+  const fetchUserClasses = async (userId) => {
     try {
-      console.log("Logging out...");
-  
-      const logoutResponse = await fetch("http://localhost:5001/api/auth/logout", {
-        method: "GET",
-        credentials: "include", // Required for session clearing
+      const res = await fetch(`${API_URL}/api/courses/user/${userId}/enrolled`, {
+        credentials: "include",
       });
-  
-      if (!logoutResponse.ok) {
-        throw new Error("Logout failed on backend");
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch enrolled classes");
       }
-  
-      console.log("Logout successful, redirecting...");
-  
-      // Remove user data from state and local storage
-      setUser(null);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-  
-      // Use navigate instead of a backend redirect to avoid CORS issues
-      navigate("/login", { replace: true });
+
+      const data = await res.json();
+      setUserClasses(data);
+      setTotalCredits(data.reduce((sum, classItem) => sum + (classItem.creditHours || 0), 0));
     } catch (err) {
-      console.error("Logout error:", err);
+      console.error("❌ Error fetching enrolled classes:", err);
+      setErrorMessage(err.message);
     }
   };
 
-  const handleAddClass = () => {
-    navigate('/add-class');
+  const handleLogout = async () => {
+    try {
+      const logoutResponse = await fetch(`${API_URL}/api/auth/logout`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!logoutResponse.ok) {
+        throw new Error("Logout failed");
+      }
+
+      setUser(null);
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("❌ Logout error:", err);
+    }
   };
 
-  const handleDeleteClass = () => {
-    navigate('/delete-class');
+  const handleAddClass = () => navigate('/add-class');
+  const handleDeleteClass = () => navigate('/delete-class');
+  const handleDeleteCompletedClass = () => navigate('/delete-completed-class');
+  const handleViewProfile = () => navigate('/profile');
+  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+
+  const handleMarkAsComplete = (classToComplete) => {
+    // Create a completed class object with consistent property names
+    const completedClass = {
+      _id: classToComplete._id,
+      code: classToComplete.courseCode,
+      name: classToComplete.title,
+      credits: classToComplete.creditHours,
+      completed: true
+    };
+
+    // Remove from enrolled classes by calling the API
+    if (user && user._id) {
+      // This would normally make an API call to unenroll
+      // For now, we'll just remove it locally
+      const updatedEnrolled = userClasses.filter((c) => c._id !== classToComplete._id);
+      setUserClasses(updatedEnrolled);
+      setTotalCredits(updatedEnrolled.reduce((sum, item) => sum + (item.creditHours || 0), 0));
+    }
+
+    // Add to completed classes in localStorage
+    const updatedCompleted = [...completedClasses, completedClass];
+    setCompletedClasses(updatedCompleted);
+    localStorage.setItem('completedClasses', JSON.stringify(updatedCompleted));
   };
 
-  const handleViewProfile = () => {
-    navigate('/profile');
+  const handleRemoveCompletedClass = (classToRemove) => {
+    // Filter out the class to be removed
+    const updatedCompleted = completedClasses.filter((c) => c._id !== classToRemove._id);
+    setCompletedClasses(updatedCompleted);
+    localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
   };
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  // If still loading, show a loading indicator
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -110,7 +139,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">BoileResources</span>
+              <span className="text-white text-xl font-bold">Boiler Resources</span>
             </div>
             <div className="relative flex items-center gap-4">
               {user ? (
@@ -166,17 +195,27 @@ const Home = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to BoileResources</h1>
+        
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to Boiler Resources</h1>
+
           <p className="text-gray-600 dark:text-gray-400">
             This is your dashboard where you can access and manage your resources.
           </p>
         </div>
+
 
         {/* User's Classes Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Classes</h2>
+
+        {/* User's Current Classes Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Enrolled Classes</h2>
+
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Total Credits: {totalCredits} 
                 {totalCredits < MIN_CREDIT_HOURS && 
@@ -201,14 +240,37 @@ const Home = () => {
               </button>
             </div>
           </div>
-          
+
+          {errorMessage && (
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
+              <strong>Error:</strong> {errorMessage}
+            </div>
+          )}
+
           {userClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userClasses.map((classItem, index) => (
-                <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.code}</h3>
-                  <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
+              {userClasses.map((classItem) => (
+                <div 
+                  key={classItem._id} 
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.courseCode}</h3>
+                  <p className="text-gray-800 dark:text-gray-200">{classItem.title}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.creditHours}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      onClick={() => navigate(`/class/${classItem._id}`)}
+                      className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                    >
+                      Details
+                    </button>
+                    <button 
+                      onClick={() => handleMarkAsComplete(classItem)}
+                      className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition"
+                    >
+                      Mark as Complete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -217,6 +279,38 @@ const Home = () => {
           )}
         </div>
         
+        {/* User's Completed Classes Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Completed Classes</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Keep track of the courses you've already completed.
+              </p>
+            </div>
+          </div>
+          
+          {completedClasses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {completedClasses.map((classItem, index) => (
+                <div key={classItem._id || index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.code}</h3>
+                  <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
+                  <button 
+                    onClick={() => handleRemoveCompletedClass(classItem)}
+                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">You don't have any completed classes yet. Mark classes as complete from your enrolled classes.</p>
+          )}
+        </div>
+
         {/* Resource Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

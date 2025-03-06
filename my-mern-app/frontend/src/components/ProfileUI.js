@@ -80,15 +80,14 @@ const ProfileUI = () => {
     e.preventDefault();
     setMessage("");
     setErrors({});
-  
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-  
-    const userId = user?._id;
-  
+
+    const userId = user?._id; // Get user ID from state
+
     if (!userId) {
       setMessage("User ID not found");
       return;
@@ -122,6 +121,7 @@ const ProfileUI = () => {
       }
       
       // Now send the updated profile (with the new image URL if there was one)
+
       const response = await axios.put(
         `http://localhost:5001/api/auth/profile/${userId}`,
         updatedProfile,

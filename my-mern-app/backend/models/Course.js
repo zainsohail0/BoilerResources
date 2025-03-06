@@ -1,94 +1,34 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-// Define a Comment schema for resources
+// Comment Schema for Resources
 const commentSchema = new Schema({
-  text: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  postedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  datePosted: {
-    type: Date,
-    default: Date.now
-  },
-  upvotes: {
-    type: Number,
-    default: 0
-  },
-  downvotes: {
-    type: Number,
-    default: 0
-  }
+  text: { type: String, required: true, trim: true },
+  postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  datePosted: { type: Date, default: Date.now },
+  upvotes: { type: Number, default: 0 },
+  downvotes: { type: Number, default: 0 },
 });
 
-// Define a comprehensive Resource schema based on the diagram
+// Resource Schema for Course Resources
 const resourceSchema = new Schema({
-  resourceId: {
-    type: Number,
-    required: true
-  },
-  title: {
-    type: String,
-    required: true,
-    trim: true
-  },
+  title: { type: String, required: true, trim: true },
   type: {
     type: String,
-    enum: ['pdf', 'video', 'link', 'document', 'other'],
-    default: 'other',
-    required: true
-  },
-  url: {
-    type: String,
+    enum: ["pdf", "video", "link", "document", "other"],
+    default: "other",
     required: true,
-    trim: true
   },
-  description: {
-    type: String,
-    trim: true
-  },
-  datePosted: {
-    type: Date,
-    default: Date.now
-  },
-  upvotes: {
-    type: Number,
-    default: 0
-  },
-  downvotes: {
-    type: Number,
-    default: 0
-  },
+  url: { type: String, required: true, trim: true },
+  description: { type: String, trim: true },
+  datePosted: { type: Date, default: Date.now },
+  upvotes: { type: Number, default: 0 },
+  downvotes: { type: Number, default: 0 },
   comments: [commentSchema],
-  postedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  fileType: {
-    type: String,
-    trim: true
-  },
-  shareLink: {
-    type: String,
-    trim: true
-  }
+  postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 });
 
-// Add methods to the resourceSchema for the functionality shown in the diagram
-resourceSchema.methods.upvote = function(user) {
-  // Check if user has already voted
-  // Implement your voting logic here
-  this.upvotes += 1;
-  return true;
-};
-
+// Add resourceSchema methods from completed-classes branch
 resourceSchema.methods.downvote = function(user) {
   // Check if user has already voted
   // Implement your voting logic here
@@ -117,66 +57,52 @@ resourceSchema.methods.setAttribute = function(name, value) {
   this[name] = value;
 };
 
-// Define the Course schema
-const courseSchema = new Schema(
-  {
-    courseId: {
-      type: Number,
-      required: true,
-      unique: true
-    },
-    courseCode: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    professor: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    professorEmail: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
-    },
-    description: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    creditHours: {
-      type: Number,
-      required: true,
-      min: 1
-    },
-    type: {
-      type: String,
-      required: true,
-      enum: ['Lecture', 'Lab', 'Seminar', 'Workshop', 'Online'],
-      trim: true
-    },
-    subject: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    resources: [resourceSchema]
+// Main Course Schema - Combined from both branches
+const courseSchema = new Schema({
+  courseId: {
+    type: Number,
+    unique: true
   },
-  {
-    timestamps: true // Adds createdAt and updatedAt fields automatically
+  title: { type: String, required: true, trim: true },
+  subjectCode: { type: String, trim: true },
+  courseCode: { type: String, required: true, trim: true },
+  instructor: [{ type: String }], // Array of instructors
+  professor: { type: String, trim: true },
+  professorEmail: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+  },
+  description: { type: String, required: true, trim: true },
+  capacity: { type: Number, default: 0 },
+  credits: { type: Number }, // Academic credits
+  creditHours: { type: Number, min: 1 }, // Credit hours
+  term: { type: String },
+  crn: [{ type: Number, default: [] }],
+  sched: [{ type: String, default: [] }],
+  type: {
+    type: String,
+    enum: ['Lecture', 'Lab', 'Seminar', 'Workshop', 'Online'],
+    trim: true
+  },
+  subject: {
+    type: String,
+    trim: true
+  },
+  resources: [resourceSchema], // Embedded resources for each course
+  users: [{ type: Schema.Types.ObjectId, ref: "User", default: [] }], // Tracks enrolled users
+  completed: {
+    type: Boolean,
+    default: false
   }
-);
+}, {
+  timestamps: true // Adds createdAt and updatedAt fields automatically
+});
 
 // Create models
-const Resource = mongoose.model("Resource", resourceSchema);
 const Course = mongoose.model("Course", courseSchema);
+const Resource = mongoose.model("Resource", resourceSchema);
 
 export { Course, Resource };
 export default Course;

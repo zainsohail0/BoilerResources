@@ -304,6 +304,21 @@ router.get("/logout", (req, res) => {
   }
 });
 
+// Fetch user details by ID
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select("-password"); // Exclude password
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error("Error fetching user:", err.message);
+    res.status(500).json({ error: "Error fetching user: " + err.message });
+  }
+});
+
+
 // Forgot Password Route
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;

@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import passport from "passport";
 import MongoStore from "connect-mongo"; // Store sessions in MongoDB
 import authRoutes from "./routes/auth.js";
+import courseRoutes from "./routes/classRoutes.js"; // Import course routes
 import "./config/passport.js";
 
 dotenv.config();
@@ -16,7 +17,7 @@ const app = express();
 // CORS Middleware - Allows frontend to send credentials (cookies)
 app.use(
   cors({
-    origin: "http://localhost:3000", //frontend URL
+    origin: "http://localhost:3000", // Frontend URL
     credentials: true, // Allow cookies & authentication headers
   })
 );
@@ -42,6 +43,7 @@ app.use(
   })
 );
 
+// Force Logout Route (Session Debugging)
 app.get("/force-logout", (req, res) => {
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
@@ -53,8 +55,9 @@ app.get("/force-logout", (req, res) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes (JWT + Google OAuth)
+// Add API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes); //Ensure courses route is registered
 
 // Debugging Route (Check Session Data)
 app.get("/debug-session", (req, res) => {
@@ -69,19 +72,26 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+//  Log Registered Routes for Debugging
+app._router.stack.forEach((r) => {
+  if (r.route && r.route.path) {
+    console.log(`🛠 Registered Route: ${r.route.path}`);
+  }
+});
+
 // Start Server
 const PORT = process.env.PORT || 5001;
 mongoose
   .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log("MongoDB connected successfully");
+    console.log(" MongoDB connected successfully");
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(` Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
+    console.error(" MongoDB connection error:", err);
     process.exit(1); // Prevents server from starting if DB fails
   });
 
-
+export default app;
