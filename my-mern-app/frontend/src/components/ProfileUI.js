@@ -80,46 +80,76 @@ const ProfileUI = () => {
     e.preventDefault();
     setMessage("");
     setErrors({});
-
+  
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
+  
     const userId = user?._id; // Get user ID from state
-
+  
     if (!userId) {
       setMessage("User ID not found");
       return;
     }
-
+  
     try {
-      let imageUrl = profile.profileImage;
-
+      // If there's a file to upload, send it to the backend upload endpoint first
       if (selectedFile) {
         const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('upload_preset', 'your_upload_preset'); // Replace with your Cloudinary upload preset
-
-        const uploadRes = await axios.post('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', formData); // Replace with your Cloudinary URL
-        imageUrl = uploadRes.data.secure_url;
+        formData.append('profilePicture', selectedFile);
+        formData.append('userId', userId);
+  
+        const uploadRes = await axios.post(
+          'http://localhost:5001/api/auth/upload-profile-picture',
+          formData,
+          { 
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+  
+        // Get the profile picture URL from the response
+        const imageUrl = uploadRes.data.profilePicture;
+        
+        // Update profile with the new image URL
+        setProfile({ ...profile, profileImage: imageUrl });
+        
+        // Update user profile with all data including new image URL
+        const response = await axios.put(
+          `http://localhost:5001/api/auth/profile/${userId}`,
+          { ...profile, profileImage: imageUrl },
+          { withCredentials: true }
+        );
+  
+        setMessage("Profile updated successfully!");
+        setOriginalProfile(response.data.user);
+        setProfile(response.data.user);
+      } else {
+        // Just update profile data without changing the image
+        const response = await axios.put(
+          `http://localhost:5001/api/auth/profile/${userId}`,
+          profile,
+          { withCredentials: true }
+        );
+  
+        setMessage("Profile updated successfully!");
+        setOriginalProfile(response.data.user);
+        setProfile(response.data.user);
       }
-
-      const updatedProfile = { ...profile, profileImage: imageUrl };
-
-      const response = await axios.put(
-        `http://localhost:5001/api/auth/profile/${userId}`,
-        updatedProfile,
-        { withCredentials: true }
-      );
-
-      setMessage("Profile updated successfully!");
-      setOriginalProfile(response.data.user); // Update original profile
-      setProfile(response.data.user); // Reflect changes in UI
+      
       setIsEditing(false);
-      setShowFileInput(false); // Hide file input after saving
+      setShowFileInput(false);
+      setSelectedFile(null);
     } catch (error) {
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       setMessage(error.response?.data?.message || "Error updating profile");
     }
   };
@@ -130,6 +160,7 @@ const ProfileUI = () => {
     setIsEditing(false);
     setMessage(''); // Clear the message
     setShowFileInput(false); // Hide file input on cancel
+    setSelectedFile(null); // Reset file selection
   };
 
   const handleEdit = () => {
