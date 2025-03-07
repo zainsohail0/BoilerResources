@@ -23,6 +23,7 @@ const ProfileUI = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
   const [showFileInput, setShowFileInput] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const defaultAvatar = '/images/225-default-avatar.png'; // Relative URL to the image in the public directory
 
@@ -153,6 +154,7 @@ const ProfileUI = () => {
     setMessage(''); // Clear the message
     setShowFileInput(false); // Hide file input on cancel
     setSelectedFile(null); // Reset file selection
+    setShowDeleteConfirm(false); // Hide delete confirmation
   };
 
   const handleEdit = () => {
@@ -176,6 +178,31 @@ const ProfileUI = () => {
 
   const handleEditPicture = () => {
     setShowFileInput(true);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeletePicture = async () => {
+    try {
+      const userId = user?._id;
+      if (!userId) {
+        setMessage("User ID not found");
+        return;
+      }
+
+      const response = await axios.delete(
+        `http://localhost:5001/api/auth/delete-profile-picture/${userId}`,
+        { withCredentials: true }
+      );
+
+      // Update profile with the response data
+      setProfile(response.data.user);
+      setOriginalProfile(response.data.user);
+      setMessage("Profile picture deleted successfully");
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Error deleting profile picture:", error);
+      setMessage(error.response?.data?.message || "Error deleting profile picture");
+    }
   };
 
   // If still loading, show a loading indicator
@@ -287,14 +314,47 @@ const ProfileUI = () => {
                       </button>
                     </div>
                   </>
+                ) : showDeleteConfirm ? (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      Are you sure you want to delete your profile picture?
+                    </p>
+                    <div className="flex justify-between">
+                      <button
+                        type="button"
+                        onClick={handleDeletePicture}
+                        className="group relative w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="group relative w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 ml-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleEditPicture}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Edit Picture
-                  </button>
+                  <div className="flex flex-col space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleEditPicture}
+                      className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white !bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      Edit Picture
+                    </button>
+                    {profile.profileImage && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Delete Picture
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
