@@ -11,21 +11,20 @@ import Home from "./components/Home";
 import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
-import ClassDetails from "./components/classDetails"; // ✅ Ensure it's correctly imported
+import ClassDetails from "./components/classDetails";
+import Chat from "./components/Chat"; // ✅ Import Chat Component
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
-  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-    
+
     if (token) {
       localStorage.setItem("token", token);
-      navigate("/home"); // ✅ Redirect to home after login
+      navigate("/home");
     }
   }, [navigate]);
-  
   return <div>Redirecting...</div>;
 };
 
@@ -44,8 +43,12 @@ function App() {
           <Route path="/add-class" element={<AddClass />} />
           <Route path="/delete-class" element={<DeleteClass />} />
           <Route path="/delete-completed-class" element={<DeleteCompletedClass />} />
-          <Route path="/class/:id" element={<ClassDetails />} /> {/* ✅ Fixed Route */}
-          <Route path="/oauth-callback" element={<OAuthHandler />} /> {/* ✅ OAuth handler properly captures tokens */}
+          <Route path="/class/:id" element={<ClassDetails />} />
+          <Route path="/oauth-callback" element={<OAuthHandler />} />
+
+          {/* ✅ New Route for Chat */}
+          <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
+
         </Routes>
       </Router>
     </ThemeProvider>
