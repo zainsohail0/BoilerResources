@@ -10,10 +10,10 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/classRoutes.js";
-import groupRoutes from "./routes/groupRoutes.js"; // ✅ Import group routes
-import chatSocketHandler from "./chatSocket.js"; // ✅ Import WebSocket handler
-import Group from "./models/Group.js"; // ✅ Ensure Group model is registered
-import "./config/passport.js"; // ✅ Ensure passport is configured
+import groupRoutes from "./routes/groupRoutes.js";
+import { router as messageRoutes } from "./routes/messages.js"; // ✅ Fix: Named import
+import chatSocketHandler from "./chatSocket.js";
+import "./config/passport.js"; // Ensure passport is configured
 
 dotenv.config();
 
@@ -33,7 +33,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ✅ Express session for Google OAuth
+// ✅ Express session for authentication
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "fallbackSecretKey",
@@ -56,7 +56,21 @@ app.use(passport.session());
 // ✅ API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/groups", groupRoutes); // ✅ Register group routes
+app.use("/api/groups", groupRoutes);
+app.use("/api/messages", messageRoutes);
+
+// ✅ Health Check Route
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "🚀 Server is running..." });
+});
+
+// ✅ Debugging Route (Check Session Data)
+app.get("/debug-session", (req, res) => {
+  res.json({
+    session: req.session,
+    user: req.user || "No user",
+  });
+});
 
 // ✅ WebSocket Server Setup
 const io = new Server(server, {
@@ -70,8 +84,9 @@ const io = new Server(server, {
 // ✅ Pass WebSocket server to chat handler
 chatSocketHandler(io);
 
-// ✅ Start Server
+// ✅ Start Server with MongoDB Connection
 const PORT = process.env.PORT || 5001;
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -79,6 +94,7 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
