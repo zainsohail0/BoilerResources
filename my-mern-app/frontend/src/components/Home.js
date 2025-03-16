@@ -10,6 +10,7 @@ const Home = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
   const [completedClasses, setCompletedClasses] = useState([]);
+  const [studyGroups, setStudyGroups] = useState([]);
   const [user, setUser] = useState(null);
   const [totalCredits, setTotalCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +38,7 @@ const Home = () => {
         const data = await res.json();
         setUser(data);
         fetchUserClasses(data._id);
+        fetchUserStudyGroups(data._id);
       } catch (err) {
         console.error("❌ Auth check failed:", err);
         navigate("/login");
@@ -67,6 +69,24 @@ const Home = () => {
     }
   };
 
+  const fetchUserStudyGroups = async (userId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/groups/user/${userId}`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch study groups");
+      }
+
+      const data = await res.json();
+      setStudyGroups(data);
+    } catch (err) {
+      console.error("❌ Error fetching study groups:", err);
+      // Don't set error message here to not disrupt the main flow
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const logoutResponse = await fetch(`${API_URL}/api/auth/logout`, {
@@ -90,6 +110,8 @@ const Home = () => {
   const handleDeleteClass = () => navigate('/delete-class');
   const handleDeleteCompletedClass = () => navigate('/delete-completed-class');
   const handleViewProfile = () => navigate('/profile');
+  const handleCreateStudyGroup = () => navigate('/create-study-group');
+  const handleViewStudyGroup = (groupId) => navigate(`/study-group/${groupId}`);
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleMarkAsComplete = (classToComplete) => {
@@ -269,6 +291,61 @@ const Home = () => {
           )}
         </div>
         
+        {/* Study Groups Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Study Groups</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Connect with classmates and study together.
+              </p>
+            </div>
+            <div>
+              <button 
+                onClick={handleCreateStudyGroup}
+                className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
+              >
+                Create Study Group
+              </button>
+            </div>
+          </div>
+          
+          {studyGroups.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {studyGroups.map((group) => (
+                <div key={group._id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{group.name}</h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {group.class ? group.class.courseCode : "No class assigned"}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {group.isPrivate ? "Private Group" : "Public Group"} • {group.members.length} members
+                  </p>
+                  
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      onClick={() => handleViewStudyGroup(group._id)}
+                      className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                    >
+                      View Group
+                    </button>
+                    {group.adminId === user._id && (
+                      <button 
+                        onClick={() => navigate(`/manage-study-group/${group._id}`)}
+                        className="bg-purple-600 dark:bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition"
+                      >
+                        Manage
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">You haven't joined any study groups yet. Create one or search for existing groups.</p>
+          )}
+        </div>
+
         {/* User's Completed Classes Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
