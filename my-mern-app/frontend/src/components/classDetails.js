@@ -82,6 +82,12 @@ const ClassDetails = () => {
     fetchClassDetails();
   }, [id]);
 
+  const handleRedditSearch = () => {
+    const searchQuery = `${classDetails.courseCode} ${classDetails.title}`;
+    const redditUrl = `https://www.reddit.com/r/Purdue/search?q=${encodeURIComponent(searchQuery)}&restrict_sr=1`;
+    window.open(redditUrl, "_blank");
+  };
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -121,6 +127,13 @@ const ClassDetails = () => {
           className="mt-4 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
         >
           Back
+        </button>
+
+        <button
+          onClick={handleRedditSearch}
+          className="mt-4 ml-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+        >
+          Find on Reddit
         </button>
       </div>
     </div>
