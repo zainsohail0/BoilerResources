@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 const API_URL = "http://localhost:5001"; 
@@ -7,6 +7,7 @@ const MIN_CREDIT_HOURS = 12;
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userClasses, setUserClasses] = useState([]);
   const [completedClasses, setCompletedClasses] = useState([]);
@@ -15,6 +16,17 @@ const Home = () => {
   const [totalCredits, setTotalCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Check if we're being instructed to refresh from navigation state
+  const shouldRefreshGroups = location.state?.refreshGroups;
+  const newGroupId = location.state?.newGroupId;
+
+  useEffect(() => {
+    // Clear the location state to prevent refreshing on future navigations
+    if (shouldRefreshGroups) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [shouldRefreshGroups]);
 
   useEffect(() => {
     // Load completed classes from localStorage
@@ -26,6 +38,7 @@ const Home = () => {
     const fetchUser = async () => {
       setIsLoading(true);
       try {
+        console.log("Fetching user data...");
         const res = await fetch(`${API_URL}/api/auth/me`, {
           method: "GET",
           credentials: "include",
@@ -36,9 +49,17 @@ const Home = () => {
         }
 
         const data = await res.json();
+        console.log("User data fetched:", data);
         setUser(data);
         fetchUserClasses(data._id);
-        fetchUserStudyGroups(data._id);
+        
+        // Force refresh if coming from study group creation
+        if (shouldRefreshGroups && newGroupId) {
+          console.log(`Will fetch groups with focus on new group: ${newGroupId}`);
+          fetchUserStudyGroups(data._id, newGroupId);
+        } else {
+          fetchUserStudyGroups(data._id);
+        }
       } catch (err) {
         console.error("❌ Auth check failed:", err);
         navigate("/login");
@@ -48,10 +69,13 @@ const Home = () => {
     };
 
     fetchUser();
-  }, [navigate]);
+    
+    // No auto-refresh intervals
+  }, [navigate, shouldRefreshGroups, newGroupId]);
 
   const fetchUserClasses = async (userId) => {
     try {
+      console.log(`Fetching classes for user ${userId}...`);
       const res = await fetch(`${API_URL}/api/courses/user/${userId}/enrolled`, {
         credentials: "include",
       });
@@ -61,6 +85,7 @@ const Home = () => {
       }
 
       const data = await res.json();
+      console.log("Classes fetched:", data);
       setUserClasses(data);
       setTotalCredits(data.reduce((sum, classItem) => sum + (classItem.creditHours || 0), 0));
     } catch (err) {
@@ -69,21 +94,125 @@ const Home = () => {
     }
   };
 
-  const fetchUserStudyGroups = async (userId) => {
+  const fetchUserStudyGroups = async (userId, highlightGroupId = null) => {
     try {
-      const res = await fetch(`${API_URL}/api/groups/user/${userId}`, {
+      console.log(`Fetching study groups for user ${userId}...`);
+      // Add cache-busting query parameter
+      const timestamp = new Date().getTime();
+      const res = await fetch(`${API_URL}/api/groups/user/${userId}?t=${timestamp}`, {
         credentials: "include",
+        // Force no-cache to ensure we get fresh data
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
       });
 
+      console.log("Study groups response status:", res.status);
+      
       if (!res.ok) {
-        throw new Error("Failed to fetch study groups");
+        console.error("Failed to fetch study groups:", res.status, res.statusText);
+        const errorText = await res.text();
+        console.error("Error response:", errorText);
+        
+        // Use fallback from localStorage if API fails
+        tryFallbackGroups(userId, highlightGroupId);
+        return;
       }
 
       const data = await res.json();
-      setStudyGroups(data);
+      console.log("Study groups fetched:", data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // Ensure we have class details for each group
+        const groupsWithClasses = data.map(group => {
+          // Find the corresponding class in userClasses by ID
+          if (group.classId && userClasses.length > 0) {
+            const classInfo = userClasses.find(c => c._id === group.classId);
+            if (classInfo) {
+              return {
+                ...group,
+                class: {
+                  _id: classInfo._id,
+                  courseCode: classInfo.courseCode || "Unknown",
+                  title: classInfo.title || "Unknown"
+                }
+              };
+            }
+          }
+          return group;
+        });
+        
+        setStudyGroups(groupsWithClasses);
+        
+        // If we have a new group ID to highlight, make sure it's in the list
+        if (highlightGroupId && !data.some(g => g._id === highlightGroupId)) {
+          console.log(`New group ${highlightGroupId} not found in API response, trying fallback...`);
+          tryFallbackGroups(userId, highlightGroupId, groupsWithClasses);
+        }
+      } else {
+        console.log("No study groups returned from API, trying fallback...");
+        tryFallbackGroups(userId, highlightGroupId);
+      }
     } catch (err) {
       console.error("❌ Error fetching study groups:", err);
-      // Don't set error message here to not disrupt the main flow
+      // Try to recover with localStorage data
+      tryFallbackGroups(userId, highlightGroupId);
+    }
+  };
+  
+  // Fallback method to get study groups from localStorage if API fails
+  const tryFallbackGroups = (userId, highlightGroupId, existingGroups = []) => {
+    try {
+      const createdGroups = JSON.parse(localStorage.getItem('createdStudyGroups') || '[]');
+      console.log("Fallback: Created groups from localStorage:", createdGroups);
+      
+      if (createdGroups.length > 0) {
+        // Filter for this user's groups
+        const userGroups = createdGroups.filter(g => g.adminId === userId || g.members.includes(userId));
+        
+        if (userGroups.length > 0) {
+          // If we have a new group to highlight, make sure it's included
+          let updatedGroups = [...existingGroups];
+          
+          if (highlightGroupId) {
+            const highlightGroup = createdGroups.find(g => g._id === highlightGroupId);
+            if (highlightGroup && !updatedGroups.some(g => g._id === highlightGroupId)) {
+              updatedGroups.push(highlightGroup);
+            }
+          }
+          
+          // Add any other local groups not in the API response
+          userGroups.forEach(localGroup => {
+            if (!updatedGroups.some(g => g._id === localGroup._id)) {
+              updatedGroups.push(localGroup);
+            }
+          });
+          
+          console.log("Setting study groups with fallback data:", updatedGroups);
+          setStudyGroups(updatedGroups);
+        }
+      } else if (highlightGroupId) {
+        // Last resort: check if we have the ID of the last created group
+        const lastGroupId = localStorage.getItem('lastCreatedGroupId');
+        if (lastGroupId === highlightGroupId) {
+          // Create a placeholder group
+          const placeholder = {
+            _id: highlightGroupId,
+            name: "Recently Created Group",
+            adminId: userId,
+            members: [userId],
+            createdAt: new Date().toISOString(),
+            isPlaceholder: true
+          };
+          
+          console.log("Adding placeholder group:", placeholder);
+          setStudyGroups([...existingGroups, placeholder]);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error using fallback groups:", err);
     }
   };
 
@@ -144,6 +273,14 @@ const Home = () => {
     const updatedCompleted = completedClasses.filter((c) => c._id !== classToRemove._id);
     setCompletedClasses(updatedCompleted);
     localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
+  };
+  
+  // Force refresh button handler
+  const handleForceRefresh = () => {
+    if (user && user._id) {
+      console.log("Manually refreshing study groups...");
+      fetchUserStudyGroups(user._id);
+    }
   };
 
   if (isLoading) {
@@ -300,12 +437,20 @@ const Home = () => {
                 Connect with classmates and study together.
               </p>
             </div>
-            <div>
+            <div className="flex gap-2">
               <button 
                 onClick={handleCreateStudyGroup}
                 className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
+                style={{display: 'block'}}
               >
                 Create Study Group
+              </button>
+              <button 
+                onClick={handleForceRefresh}
+                className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                style={{display: 'block'}}
+              >
+                Refresh Groups
               </button>
             </div>
           </div>
@@ -316,10 +461,14 @@ const Home = () => {
                 <div key={group._id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{group.name}</h3>
                   <p className="text-gray-800 dark:text-gray-200">
-                    {group.class ? group.class.courseCode : "No class assigned"}
+                    {group.class?.courseCode ? 
+                      `${group.class.courseCode} - ${group.class.title}` : 
+                      (userClasses.find(c => c._id === group.classId) ? 
+                        `${userClasses.find(c => c._id === group.classId).courseCode} - ${userClasses.find(c => c._id === group.classId).title}` :
+                        "Class information unavailable")}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {group.isPrivate ? "Private Group" : "Public Group"} • {group.members.length} members
+                    {group.isPrivate ? "Private Group" : "Public Group"} • {group.memberCount || group.members?.length || 0} members
                   </p>
                   
                   <div className="flex gap-2 mt-2">

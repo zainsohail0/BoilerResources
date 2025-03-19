@@ -37,11 +37,19 @@ const StudyGroupDetails = () => {
           credentials: "include",
         });
 
+        // Log the response status for debugging
+        console.log(`Fetching group ${id}, status: ${groupRes.status}`);
+        
         if (!groupRes.ok) {
+          // Get the error text for better debugging
+          const errorText = await groupRes.text();
+          console.error("Group fetch error response:", errorText);
           throw new Error("Failed to fetch study group");
         }
 
         const groupData = await groupRes.json();
+        console.log("Fetched group data:", groupData);
+        
         setGroup(groupData);
         
         // Check if user is admin or member
@@ -49,14 +57,18 @@ const StudyGroupDetails = () => {
         setIsMember(groupData.members.includes(userData._id));
         setJoinRequestSent(groupData.joinRequests.some(req => req.userId === userData._id));
 
-        // Fetch class details
-        const classRes = await fetch(`${API_URL}/api/courses/${groupData.classId}`, {
-          credentials: "include",
-        });
+        // Fetch class details if group has classId
+        if (groupData.classId) {
+          const classRes = await fetch(`${API_URL}/api/courses/${groupData.classId}`, {
+            credentials: "include",
+          });
 
-        if (classRes.ok) {
-          const classData = await classRes.json();
-          setClassDetails(classData);
+          if (classRes.ok) {
+            const classData = await classRes.json();
+            setClassDetails(classData);
+          } else {
+            console.error("Failed to fetch class details");
+          }
         }
 
         // Fetch member details
@@ -67,6 +79,8 @@ const StudyGroupDetails = () => {
         if (membersRes.ok) {
           const membersData = await membersRes.json();
           setMembers(membersData);
+        } else {
+          console.error("Failed to fetch group members");
         }
       } catch (err) {
         console.error("❌ Error:", err);

@@ -31,6 +31,7 @@ const CreateStudyGroup = () => {
         }
 
         const userData = await userRes.json();
+        console.log("User data fetched:", userData);
         setUser(userData);
 
         // Fetch user's enrolled classes
@@ -43,6 +44,7 @@ const CreateStudyGroup = () => {
         }
 
         const classesData = await classesRes.json();
+        console.log("Classes data fetched:", classesData);
         setUserClasses(classesData);
 
         // Set default class if available
@@ -88,38 +90,79 @@ const CreateStudyGroup = () => {
       setError("You must select a class");
       return;
     }
+
+    // Get the selected class object for logging
+    const selectedClass = userClasses.find(c => c._id === formData.classId);
+    console.log("Selected class:", selectedClass);
     
     try {
+      // Create the request payload
+      const payload = {
+        name: formData.name,
+        classId: formData.classId,
+        isPrivate: formData.isPrivate,
+        adminId: user._id,
+        members: [user._id] // Add creator as first member
+      };
+
+      console.log("Sending study group creation payload:", payload);
+
       const response = await fetch(`${API_URL}/api/groups`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          name: formData.name,
-          classId: formData.classId,
-          isPrivate: formData.isPrivate,
-          adminId: user._id,
-          members: [user._id] // Add creator as first member
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create study group");
+      // Log the response status and headers for debugging
+      console.log("Response status:", response.status);
+      
+      // Get response text first for debugging
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+      
+      let data;
+      try {
+        // Try to parse the response as JSON
+        data = JSON.parse(responseText);
+        console.log("Parsed response data:", data);
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
+        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create study group");
+      }
+
+      // Store the created group ID in localStorage for fallback retrieval
+      const createdGroups = JSON.parse(localStorage.getItem('createdStudyGroups') || '[]');
+      createdGroups.push({
+        _id: data._id,
+        name: formData.name,
+        classId: formData.classId,
+        isPrivate: formData.isPrivate,
+        adminId: user._id,
+        members: [user._id],
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem('createdStudyGroups', JSON.stringify(createdGroups));
+      
+      // Also store the ID of the last created group
+      localStorage.setItem('lastCreatedGroupId', data._id);
+
       setSuccess("Study group created successfully!");
       
-      // Redirect after a brief delay
+      // Force a delay before redirecting to ensure DB transaction completes
       setTimeout(() => {
-        navigate(`/study-group/${data._id}`);
-      }, 1500);
+        // Pass a state parameter to tell Home to refresh data
+        navigate('/home', { state: { refreshGroups: true, newGroupId: data._id } });
+      }, 2000);
     } catch (err) {
       console.error("❌ Error creating study group:", err);
-      setError(err.message);
+      setError(err.message || "Failed to create study group. Please try again.");
     }
   };
 
@@ -228,20 +271,44 @@ const CreateStudyGroup = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-8">
+              {/* Primary Create Button */}
               <button
                 type="submit"
                 disabled={userClasses.length === 0}
-                className={`bg-yellow-700 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
-                  userClasses.length === 0 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                style={{
+                  backgroundColor: "#8B4513", /* brown color */
+                  color: "white",
+                  padding: "10px 16px",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  cursor: userClasses.length === 0 ? "not-allowed" : "pointer",
+                  opacity: userClasses.length === 0 ? 0.7 : 1,
+                  display: "inline-block",
+                  border: "none"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#6B3000"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#8B4513"}
               >
                 Create Study Group
               </button>
+              
+              {/* Cancel Button */}
               <button
                 type="button"
                 onClick={() => navigate('/home')}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                style={{
+                  backgroundColor: "#6B7280", /* gray color */
+                  color: "white",
+                  padding: "10px 16px",
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "inline-block",
+                  border: "none"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#4B5563"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#6B7280"}
               >
                 Cancel
               </button>
