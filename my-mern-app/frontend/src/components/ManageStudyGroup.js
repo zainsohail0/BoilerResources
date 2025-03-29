@@ -17,6 +17,8 @@ const ManageStudyGroup = () => {
     name: "",
     isPrivate: false,
   });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,20 +94,41 @@ const ManageStudyGroup = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const newValue = type === "checkbox" ? checked : value;
+    
+    // Check if the value is actually different from the original group data
+    const isChanged = type === "checkbox" 
+      ? newValue !== group.isPrivate
+      : newValue !== group.name;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: newValue
     }));
+    
+    // If this field changed, set hasUnsavedChanges to true
+    if (isChanged) {
+      setHasUnsavedChanges(true);
+    } else {
+      // Check if other fields are different from original
+      const otherFieldChanged = name === "name" 
+        ? formData.isPrivate !== group.isPrivate
+        : formData.name !== group.name;
+      
+      setHasUnsavedChanges(otherFieldChanged);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setIsSaving(true);
     
     // Validate form
     if (!formData.name.trim()) {
       setError("Group name is required");
+      setIsSaving(false);
       return;
     }
     
@@ -134,10 +157,18 @@ const ManageStudyGroup = () => {
         isPrivate: formData.isPrivate,
       }));
       
-      setSuccess("Study group updated successfully!");
+      setSuccess("Study group settings saved successfully!");
+      setHasUnsavedChanges(false);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
     } catch (err) {
       console.error("❌ Error updating study group:", err);
       setError(err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -194,9 +225,19 @@ const ManageStudyGroup = () => {
       }
       
       setSuccess("Join request approved successfully!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
     } catch (err) {
       console.error("❌ Error approving request:", err);
       setError(err.message);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
@@ -217,9 +258,19 @@ const ManageStudyGroup = () => {
       setJoinRequests(updatedRequests);
       
       setSuccess("Join request rejected successfully!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
     } catch (err) {
       console.error("❌ Error rejecting request:", err);
       setError(err.message);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
@@ -249,9 +300,19 @@ const ManageStudyGroup = () => {
       setMembers(updatedMembers);
       
       setSuccess("Member removed successfully!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
     } catch (err) {
       console.error("❌ Error removing member:", err);
       setError(err.message);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
@@ -326,57 +387,82 @@ const ManageStudyGroup = () => {
             Manage Study Group: {group?.name}
           </h1>
           
-          <form onSubmit={handleSubmit} className="mb-8">
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="name">
-                Group Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                required
-              />
-            </div>
-
-            <div className="mb-6">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isPrivate"
-                  name="isPrivate"
-                  checked={formData.isPrivate}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-gray-700 dark:text-gray-300" htmlFor="isPrivate">
-                  Make this group private (only visible to invited members)
+          {/* Group Settings Section with Clear Title */}
+          <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Group Settings</h2>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="name">
+                  Group Name
                 </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  required
+                />
               </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                type="submit"
-                className="bg-yellow-700 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              >
-                Update Group
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteGroup}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              >
-                Delete Group
-              </button>
-            </div>
-          </form>
+              <div className="mb-6">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isPrivate"
+                    name="isPrivate"
+                    checked={formData.isPrivate}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 block text-gray-700 dark:text-gray-300" htmlFor="isPrivate">
+                    Make this group private (only visible to invited members)
+                  </label>
+                </div>
+                <p className="text-sm text-gray-500 mt-1 ml-6">
+                  Private groups require admin approval for new members to join
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                {/* Save Button - Always visible but with different styles based on state */}
+                <button
+                  type="submit"
+                  disabled={isSaving || !hasUnsavedChanges}
+                  className={
+                    hasUnsavedChanges 
+                      ? `bg-brown-600 hover:bg-brown-700 text-white font-bold py-2 px-6 rounded ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`
+                      : "bg-gray-400 text-white font-bold py-2 px-6 rounded cursor-not-allowed"
+                  }
+                  style={{ 
+                    minWidth: '140px',
+                    backgroundColor: hasUnsavedChanges ? '#8B4513' : '#9CA3AF' // Brown color when active, gray when disabled
+                  }}
+                >
+                  {isSaving ? "Saving..." : (hasUnsavedChanges ? "Save Changes" : "No Changes")}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleDeleteGroup}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                >
+                  Delete Group
+                </button>
+              </div>
+              
+              {hasUnsavedChanges && (
+                <p className="text-sm text-yellow-600 mt-2">
+                  You have unsaved changes. Click "Save Changes" to apply them.
+                </p>
+              )}
+            </form>
+          </div>
 
           {/* Join Requests Section */}
-          <div className="mb-8">
+          <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Join Requests</h2>
             
             {joinRequests.length > 0 ? (

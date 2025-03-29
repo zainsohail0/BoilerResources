@@ -12,6 +12,7 @@ const Home = () => {
   const [userClasses, setUserClasses] = useState([]);
   const [completedClasses, setCompletedClasses] = useState([]);
   const [studyGroups, setStudyGroups] = useState([]);
+  const [pendingJoinRequests, setPendingJoinRequests] = useState([]);
   const [user, setUser] = useState(null);
   const [totalCredits, setTotalCredits] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +61,9 @@ const Home = () => {
         } else {
           fetchUserStudyGroups(data._id);
         }
+        
+        // Fetch pending join requests
+        fetchPendingJoinRequests(data._id);
       } catch (err) {
         console.error("❌ Auth check failed:", err);
         navigate("/login");
@@ -91,6 +95,33 @@ const Home = () => {
     } catch (err) {
       console.error("❌ Error fetching enrolled classes:", err);
       setErrorMessage(err.message);
+    }
+  };
+
+  const fetchPendingJoinRequests = async (userId) => {
+    try {
+      console.log("Fetching pending join requests...");
+      const token = localStorage.getItem('token');
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const res = await fetch(`${API_URL}/api/groups/pending-requests`, {
+        headers,
+        credentials: "include"
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Pending join requests fetched:", data);
+        setPendingJoinRequests(data);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching pending join requests:", err);
     }
   };
 
@@ -241,6 +272,8 @@ const Home = () => {
   const handleViewProfile = () => navigate('/profile');
   const handleCreateStudyGroup = () => navigate('/create-study-group');
   const handleViewStudyGroup = (groupId) => navigate(`/study-group/${groupId}`);
+  const handleViewClassGroups = (classId) => navigate(`/class/${classId}/groups`);
+  const handleViewPendingRequests = () => navigate('/pending-requests');
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleMarkAsComplete = (classToComplete) => {
@@ -280,6 +313,7 @@ const Home = () => {
     if (user && user._id) {
       console.log("Manually refreshing study groups...");
       fetchUserStudyGroups(user._id);
+      fetchPendingJoinRequests(user._id);
     }
   };
 
@@ -406,16 +440,23 @@ const Home = () => {
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.courseCode}</h3>
                   <p className="text-gray-800 dark:text-gray-200">{classItem.title}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.creditHours}</p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <button 
                       onClick={() => navigate(`/class/${classItem._id}`)}
                       className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                     >
                       Details
                     </button>
+                    {/* New button for Study Groups */}
+                    <button 
+                      onClick={() => handleViewClassGroups(classItem._id)}
+                      className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition"
+                    >
+                      Study Groups
+                    </button>
                     <button 
                       onClick={() => handleMarkAsComplete(classItem)}
-                      className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition"
+                      className="bg-purple-600 dark:bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition"
                     >
                       Mark as Complete
                     </button>
@@ -435,6 +476,11 @@ const Home = () => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Study Groups</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Connect with classmates and study together.
+                {pendingJoinRequests.length > 0 && (
+                  <span className="ml-2 text-yellow-600 dark:text-yellow-400 font-semibold">
+                    (You have {pendingJoinRequests.length} pending join requests)
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex gap-2">
@@ -445,6 +491,14 @@ const Home = () => {
               >
                 Create Study Group
               </button>
+              {pendingJoinRequests.length > 0 && (
+                <button 
+                  onClick={handleViewPendingRequests}
+                  className="bg-yellow-600 dark:bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 transition"
+                >
+                  View Pending Requests
+                </button>
+              )}
               <button 
                 onClick={handleForceRefresh}
                 className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
@@ -471,12 +525,19 @@ const Home = () => {
                     {group.isPrivate ? "Private Group" : "Public Group"} • {group.memberCount || group.members?.length || 0} members
                   </p>
                   
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <button 
                       onClick={() => handleViewStudyGroup(group._id)}
                       className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                     >
                       View Group
+                    </button>
+                    {/* New button for the enhanced group details */}
+                    <button 
+                      onClick={() => navigate(`/groups/${group._id}`)}
+                      className="bg-teal-600 dark:bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition"
+                    >
+                      Group Details
                     </button>
                     {group.adminId === user._id && (
                       <button 
