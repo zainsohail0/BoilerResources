@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5001";
@@ -10,6 +10,8 @@ const ClassDetails = () => {
   const [otherClasses, setOtherClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [professorOptions, setProfessorOptions] = useState(null);
+  const professorOptionsRef = useRef(null);
 
   useEffect(() => {
     if (!id) {
@@ -102,6 +104,7 @@ const ClassDetails = () => {
             const searchQuery = name;
             const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/783?q=${encodeURIComponent(searchQuery)}`;
             window.open(rateMyProfessorUrl, "_blank");
+            setProfessorOptions(null); // Close the options after clicking
           }}
           className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
         >
@@ -112,31 +115,19 @@ const ClassDetails = () => {
     }
   };
 
-  // const handleRateMyProfessorSearch = () => {
-  //   const professorNames = classDetails.professor.split(",").map(name => name.trim());
-  //   if (professorNames.length === 1) {
-  //     const searchQuery = professorNames[0];
-  //     const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
-  //     window.open(rateMyProfessorUrl, "_blank");
-  //   } else {
-  //     const professorOptions = professorNames.map((name, index) => (
-  //       <button
-  //         key={index}
-  //         onClick={() => {
-  //           const searchQuery = name;
-  //           const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
-  //           window.open(rateMyProfessorUrl, "_blank");
-  //         }}
-  //         className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-  //       >
-  //         {name}
-  //       </button>
-  //     ));
-  //     setProfessorOptions(professorOptions);
-  //   }
-  // };
+  // Close professor options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (professorOptionsRef.current && !professorOptionsRef.current.contains(event.target)) {
+        setProfessorOptions(null);
+      }
+    };
 
-  const [professorOptions, setProfessorOptions] = useState(null);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -194,7 +185,7 @@ const ClassDetails = () => {
         </button>
 
         {professorOptions && (
-          <div className="mt-4">
+          <div ref={professorOptionsRef} className="mt-4">
             <h2 className="text-xl font-semibold text-gray-800">Select a professor:</h2>
             <div className="flex flex-col mt-2">
               {professorOptions}
