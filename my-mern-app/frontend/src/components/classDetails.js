@@ -92,7 +92,7 @@ const ClassDetails = () => {
     const professorNames = classDetails.professor.split(",").map(name => name.trim());
     if (professorNames.length === 1) {
       const searchQuery = professorNames[0];
-      const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
+      const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/783?q=${encodeURIComponent(searchQuery)}`;
       window.open(rateMyProfessorUrl, "_blank");
     } else {
       const professorOptions = professorNames.map((name, index) => (
@@ -100,7 +100,7 @@ const ClassDetails = () => {
           key={index}
           onClick={() => {
             const searchQuery = name;
-            const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
+            const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/783?q=${encodeURIComponent(searchQuery)}`;
             window.open(rateMyProfessorUrl, "_blank");
           }}
           className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
@@ -111,6 +111,30 @@ const ClassDetails = () => {
       setProfessorOptions(professorOptions);
     }
   };
+
+  // const handleRateMyProfessorSearch = () => {
+  //   const professorNames = classDetails.professor.split(",").map(name => name.trim());
+  //   if (professorNames.length === 1) {
+  //     const searchQuery = professorNames[0];
+  //     const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
+  //     window.open(rateMyProfessorUrl, "_blank");
+  //   } else {
+  //     const professorOptions = professorNames.map((name, index) => (
+  //       <button
+  //         key={index}
+  //         onClick={() => {
+  //           const searchQuery = name;
+  //           const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/${encodeURIComponent(searchQuery)}&sid=U2Nob29sLTEzNQ==`; // Purdue University ID
+  //           window.open(rateMyProfessorUrl, "_blank");
+  //         }}
+  //         className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+  //       >
+  //         {name}
+  //       </button>
+  //     ));
+  //     setProfessorOptions(professorOptions);
+  //   }
+  // };
 
   const [professorOptions, setProfessorOptions] = useState(null);
 
