@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from './context/ThemeContext';
+
 import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -12,7 +13,8 @@ import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
 import ClassDetails from "./components/classDetails";
-import Chat from "./components/Chat"; // ✅ Import Chat Component
+import Chat from "./components/Chat";
+import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -46,9 +48,9 @@ function App() {
           <Route path="/class/:id" element={<ClassDetails />} />
           <Route path="/oauth-callback" element={<OAuthHandler />} />
 
-          {/* ✅ New Route for Chat */}
+          {/* ✅ Chat + Calendar Routes */}
           <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
-
+          <Route path="/calendar" element={<ScheduleCalendar />} /> {/* ✅ New route */}
         </Routes>
       </Router>
     </ThemeProvider>

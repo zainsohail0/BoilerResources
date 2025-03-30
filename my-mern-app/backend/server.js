@@ -8,19 +8,20 @@ import passport from "passport";
 import MongoStore from "connect-mongo";
 import { createServer } from "http";
 import { Server } from "socket.io";
+
 import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/classRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
-import { router as messageRoutes } from "./routes/messages.js"; // ✅ Fix: Named import
+import calendarRoutes from "./routes/calendar.js"; // ✅ Added
+import { router as messageRoutes } from "./routes/messages.js";
 import chatSocketHandler from "./chatSocket.js";
-import "./config/passport.js"; // Ensure passport is configured
+import "./config/passport.js";
 
 dotenv.config();
 
 const app = express();
-const server = createServer(app); // Create HTTP server for WebSockets
+const server = createServer(app);
 
-// ✅ CORS Middleware
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -28,12 +29,10 @@ app.use(
   })
 );
 
-// ✅ Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ✅ Express session for authentication
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "fallbackSecretKey",
@@ -49,7 +48,6 @@ app.use(
   })
 );
 
-// ✅ Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -57,14 +55,13 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/calendar", calendarRoutes); // ✅ New route added
 app.use("/api/messages", messageRoutes);
 
-// ✅ Health Check Route
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
 });
 
-// ✅ Debugging Route (Check Session Data)
 app.get("/debug-session", (req, res) => {
   res.json({
     session: req.session,
@@ -72,7 +69,7 @@ app.get("/debug-session", (req, res) => {
   });
 });
 
-// ✅ WebSocket Server Setup
+// ✅ WebSocket Setup
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -81,10 +78,9 @@ const io = new Server(server, {
   },
 });
 
-// ✅ Pass WebSocket server to chat handler
 chatSocketHandler(io);
 
-// ✅ Start Server with MongoDB Connection
+// ✅ Start Server
 const PORT = process.env.PORT || 5001;
 
 mongoose

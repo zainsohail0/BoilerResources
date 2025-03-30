@@ -1,44 +1,44 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { useParams } from "react-router-dom"; // ✅ Get `groupId` from URL
+import { useParams } from "react-router-dom"; //  Get `groupId` from URL
 
 const socket = io("http://localhost:5001", { withCredentials: true });
 
 const Chat = ({ userId }) => {
-  const { groupId } = useParams(); // ✅ Extract groupId from URL
+  const { groupId } = useParams(); //  Extract groupId from URL
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const limit = 10; // ✅ Pagination limit
+  const limit = 10; //  Pagination limit
 
-  // ✅ Fetch messages when chat opens
+  //  Fetch messages when chat opens
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        console.log(`📡 Fetching messages for groupId: ${groupId}`);
+        console.log(` Fetching messages for groupId: ${groupId}`);
         const res = await fetch(`http://localhost:5001/api/messages/${groupId}?page=1&limit=${limit}`);
         const data = await res.json();
 
-        console.log("📩 Messages received:", data);
+        console.log(" Messages received:", data);
         if (Array.isArray(data)) {
-          setMessages(data.reverse()); // ✅ Show in chronological order
+          setMessages(data.reverse()); //  Show in chronological order
         } else {
-          console.error("❌ Invalid API response format:", data);
+          console.error(" Invalid API response format:", data);
         }
       } catch (error) {
-        console.error("❌ Error fetching messages:", error);
+        console.error(" Error fetching messages:", error);
       }
     };
 
     if (groupId) fetchMessages();
   }, [groupId]);
 
-  // ✅ Listen for real-time messages
+  //  Listen for real-time messages
   useEffect(() => {
     if (groupId && socket) {
       socket.emit("joinGroup", groupId);
 
       socket.on("receiveMessage", (message) => {
-        console.log("🆕 New message received:", message);
+        console.log(" New message received:", message);
         setMessages((prevMessages) => [...prevMessages, message]);
       });
     }
@@ -51,15 +51,15 @@ const Chat = ({ userId }) => {
   }, [groupId]);
 
   const sendMessage = () => {
-    console.log("📤 Sending message:", { groupId, senderId: userId, text });
+    console.log(" Sending message:", { groupId, senderId: userId, text });
 
     if (!groupId || !userId || !text.trim()) {
-      console.error("❌ Error: groupId, senderId, or text is missing!");
+      console.error(" Error: groupId, senderId, or text is missing!");
       return;
     }
 
     socket.emit("sendMessage", { groupId, senderId: userId, text });
-    setText(""); // ✅ Clear input field
+    setText(""); // Clear input field
   };
 
   return (
