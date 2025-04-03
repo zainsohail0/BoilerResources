@@ -1,105 +1,37 @@
-
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5001";
 
 const ClassStudyGroups = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [studyGroups, setStudyGroups] = useState([]);
   const [classDetails, setClassDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [studyGroups, setStudyGroups] = useState([]);
+  const [userStatuses, setUserStatuses] = useState({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [joinStatus, setJoinStatus] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [mockMode, setMockMode] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-
-  // Check if we have class details from navigation state
-  useEffect(() => {
-    if (location.state?.classDetails) {
-      setClassDetails(location.state.classDetails);
-    }
-  }, [location.state]);
-
-  // Get user data first
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        // First check if we have a cached user in state or sessionStorage
-        const cachedUser = sessionStorage.getItem('currentUser');
-        if (cachedUser) {
-          const userData = JSON.parse(cachedUser);
-          setCurrentUser(userData);
-          return;
-        }
-
-        // Get token from localStorage
-        const token = localStorage.getItem('token');
-        const headers = {
-          "Content-Type": "application/json"
-        };
-        
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        // Try to fetch current user
-        const userRes = await fetch(`${API_URL}/api/auth/me`, {
-          headers,
-          credentials: "include"
-        });
-
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          console.log("User data fetched:", userData);
-          setCurrentUser(userData);
-          
-          // Cache the user data
-          sessionStorage.setItem('currentUser', JSON.stringify(userData));
-          
-          // Also store the user ID specifically for easier access
-          localStorage.setItem('userId', userData._id);
-          sessionStorage.setItem('userId', userData._id);
-        } else {
-          console.log("Could not fetch user, checking localStorage");
-          // Try to get user ID from localStorage or session
-          const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
-          
-          if (userId) {
-            setCurrentUser({ _id: userId });
-          } else {
-            console.warn("No user ID found in storage");
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(localStorage.getItem('userId'));
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentUser) {
-        // Wait for user data to be loaded first
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
-      
       try {
-        // Get user ID
-        const userId = currentUser._id || localStorage.getItem('userId') || sessionStorage.getItem('userId');
-        console.log("Using user ID:", userId);
+        setLoading(true);
+        setError(null);
         
-        // Get token from localStorage
+        // Get auth token and user ID
         const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        setCurrentUserId(userId);
+        
+        if (!userId) {
+          setError("You must be logged in to view study groups");
+          setLoading(false);
+          return;
+        }
+        
+        // Set headers for requests
         const headers = {
           "Content-Type": "application/json"
         };
@@ -107,384 +39,169 @@ const ClassStudyGroups = () => {
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
         }
-
-        // Fetch class details if we don't already have them
-        if (!classDetails) {
+        
+        if (userId) {
+          headers["X-User-ID"] = userId; 
+        }
+        
+        // Fetch class details
+        const classRes = await fetch(`${API_URL}/api/courses/${classId}`, {
+          headers,
+          credentials: "include"
+        });
+        
+        if (!classRes.ok) {
+          throw new Error("Failed to fetch class details");
+        }
+        
+        const classData = await classRes.json();
+        setClassDetails(classData);
+        
+        // Fetch study groups for this class
+        const groupsRes = await fetch(`${API_URL}/api/groups/class/${classId}`, {
+          headers,
+          credentials: "include"
+        });
+        
+        if (!groupsRes.ok) {
+          throw new Error("Failed to fetch study groups");
+        }
+        
+        const groupsData = await groupsRes.json();
+        setStudyGroups(groupsData);
+        
+        // For each group, fetch user status
+        const statusesObj = {};
+        
+        for (const group of groupsData) {
           try {
-            const classRes = await fetch(`${API_URL}/api/courses/${classId}`, {
+            const statusRes = await fetch(`${API_URL}/api/groups/${group._id}/user-status`, {
               headers,
               credentials: "include"
             });
-
-            if (classRes.ok) {
-              const classData = await classRes.json();
-              console.log("Class details fetched:", classData);
-              setClassDetails(classData);
+            
+            if (statusRes.ok) {
+              const statusData = await statusRes.json();
+              statusesObj[group._id] = statusData;
             } else {
-              console.log("Failed to fetch class details, using dummy data");
-              // Generate dummy class data
-              setClassDetails({
-                _id: classId,
-                courseCode: "Course " + classId.substring(0, 4),
-                title: "Class title unavailable"
-              });
+              console.error(`Failed to fetch status for group ${group._id}`);
+              statusesObj[group._id] = {
+                isAdmin: false,
+                isMember: false,
+                hasPendingRequest: false,
+                status: 'none'
+              };
             }
-          } catch (classError) {
-            console.error("Error fetching class details:", classError);
-            // Generate dummy class data
-            setClassDetails({
-              _id: classId,
-              courseCode: "Course " + classId.substring(0, 4),
-              title: "Class title unavailable"
-            });
+          } catch (error) {
+            console.error(`Error fetching status for group ${group._id}:`, error);
+            statusesObj[group._id] = {
+              isAdmin: false,
+              isMember: false,
+              hasPendingRequest: false,
+              status: 'none'
+            };
           }
-        }
-
-        // Try the /groups/class endpoint first
-        try {
-          console.log(`Trying endpoint: /api/groups/class/${classId}`);
-          const groupsRes = await fetch(`${API_URL}/api/groups/class/${classId}`, {
-            headers,
-            credentials: "include"
-          });
-          
-          if (groupsRes.ok) {
-            const groupsData = await groupsRes.json();
-            console.log("Study groups data:", groupsData);
-            
-            if (Array.isArray(groupsData) && groupsData.length > 0) {
-              processGroupsData(groupsData, userId);
-              return;
-            }
-          } else {
-            const errorText = await groupsRes.text();
-            console.error("Study groups API error:", errorText);
-          }
-        } catch (endpoint1Error) {
-          console.error("Endpoint 1 error:", endpoint1Error);
-        }
-
-        // Try using groups for current user, filtered by class
-        try {
-          if (userId) {
-            console.log(`Trying endpoint: /api/groups/user/${userId}`);
-            const userGroupsRes = await fetch(`${API_URL}/api/groups/user/${userId}`, {
-              headers,
-              credentials: "include"
-            });
-            
-            if (userGroupsRes.ok) {
-              const userGroupsData = await userGroupsRes.json();
-              console.log("User's groups:", userGroupsData);
-              
-              if (Array.isArray(userGroupsData)) {
-                // Filter for this class
-                const filteredGroups = userGroupsData.filter(group => group.classId === classId);
-                console.log("Filtered user groups for class:", filteredGroups);
-                
-                if (filteredGroups.length > 0) {
-                  processGroupsData(filteredGroups, userId);
-                  return;
-                }
-              }
-            }
-          }
-        } catch (endpoint2Error) {
-          console.error("Endpoint 2 error:", endpoint2Error);
         }
         
-        // Try just getting all groups
-        try {
-          console.log("Trying to get all groups");
-          const allGroupsRes = await fetch(`${API_URL}/api/groups`, {
-            headers,
-            credentials: "include"
-          });
-          
-          if (allGroupsRes.ok) {
-            const allGroupsData = await allGroupsRes.json();
-            console.log("All groups:", allGroupsData);
-            
-            if (Array.isArray(allGroupsData)) {
-              // Filter for this class
-              const filteredGroups = allGroupsData.filter(group => group.classId === classId);
-              console.log("Filtered all groups for class:", filteredGroups);
-              
-              if (filteredGroups.length > 0) {
-                processGroupsData(filteredGroups, userId);
-                return;
-              }
-            }
-          }
-        } catch (endpoint3Error) {
-          console.error("Endpoint 3 error:", endpoint3Error);
-        }
-        
-        // Last resort - check localStorage for created groups
-        try {
-          const createdGroups = JSON.parse(localStorage.getItem('createdStudyGroups') || '[]');
-          console.log("Created groups from localStorage:", createdGroups);
-          
-          if (Array.isArray(createdGroups) && createdGroups.length > 0) {
-            // Filter for this class
-            const filteredGroups = createdGroups.filter(group => group.classId === classId);
-            console.log("Filtered local groups for class:", filteredGroups);
-            
-            if (filteredGroups.length > 0) {
-              processGroupsData(filteredGroups, userId);
-              return;
-            }
-          }
-        } catch (localStorageError) {
-          console.error("LocalStorage error:", localStorageError);
-        }
-        
-        // All attempts failed - show empty state
-        setMockMode(true);
-        setError("Failed to fetch study groups. Please try again later.");
-        setStudyGroups([]);
+        setUserStatuses(statusesObj);
         
       } catch (err) {
-        console.error("❌ Main error:", err);
-        setError("Failed to fetch study groups. Please try again later.");
-        setStudyGroups([]);
-        setMockMode(true);
+        console.error("Error:", err);
+        setError(err.message);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-
+    
     fetchData();
-  }, [classId, classDetails, currentUser]);
-
-  const processGroupsData = (groups, userId) => {
-    setStudyGroups(groups);
-    
-    // Initialize join status for all groups
-    const statusMap = {};
-    groups.forEach(group => {
-      statusMap[group._id] = {
-        isAdmin: group.isAdmin || (group.adminId === userId),
-        isMember: group.isMember || (group.members && group.members.includes(userId)),
-        hasJoinRequest: group.hasJoinRequest || (group.joinRequests && group.joinRequests.some(req => req.userId === userId))
-      };
-    });
-    setJoinStatus(statusMap);
-    setMockMode(false);
-  };
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    
-    if (!searchQuery.trim()) {
-      // If search is empty, just reset to all groups
-      navigate(0); // Refresh the page to reset
-      return;
-    }
-    
-    // Perform client-side filtering
-    const filtered = studyGroups.filter(group => 
-      group.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    setStudyGroups(filtered);
-  };
-
+  }, [classId]);
+  
   const handleJoinGroup = async (groupId, isPrivate) => {
     try {
-      if (!currentUser || !currentUser._id) {
-        // If no user ID is found, show a more helpful message
-        const newNotification = {
-          id: Date.now(),
-          message: "Unable to find your user ID. This may be a temporary issue. Try refreshing the page or logging out and back in.",
-          type: "error"
-        };
-        setNotifications([...notifications, newNotification]);
-        return;
-      }
+      setError(null);
       
-      const userId = currentUser._id;
-      console.log("Joining with user ID:", userId);
-      
-      if (mockMode) {
-        // In mock mode, simulate joining
-        const newNotification = {
-          id: Date.now(),
-          message: isPrivate 
-            ? "Join request sent (mock mode)" 
-            : "You've joined the group (mock mode)",
-          type: isPrivate ? "info" : "success"
-        };
-        setNotifications([...notifications, newNotification]);
-        
-        // Update join status
-        setJoinStatus(prev => ({
-          ...prev,
-          [groupId]: {
-            ...prev[groupId],
-            isMember: !isPrivate,
-            hasJoinRequest: isPrivate
-          }
-        }));
-        
-        // Update the group in the list
-        setStudyGroups(prev => 
-          prev.map(group => 
-            group._id === groupId 
-              ? { 
-                  ...group, 
-                  isMember: !isPrivate,
-                  hasJoinRequest: isPrivate,
-                  memberCount: !isPrivate ? (group.memberCount || 0) + 1 : group.memberCount
-                } 
-              : group
-          )
-        );
-        return;
-      }
-      
+      // Get auth token and user ID
       const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        setError("You must be logged in to join a group");
+        return;
+      }
+      
+      // Set headers for request
       const headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-User-ID": userId
       };
       
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
-      console.log(`Attempting to join group ${groupId} (private: ${isPrivate})`);
-      const response = await fetch(`${API_URL}/api/groups/${groupId}/join`, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ userId })
-      });
+      // Call the endpoint based on whether the group is private or public
+      const endpoint = isPrivate ? 
+        `${API_URL}/api/groups/${groupId}/join-request` : 
+        `${API_URL}/api/groups/${groupId}/join`;
+      
+        const response = await fetch(`${API_URL}/api/groups/${groupId}/join`, {
+          method: "POST",
+          headers,
+          credentials: "include"
+        });
       
       let result;
+      
       try {
-        const responseText = await response.text();
-        console.log("Join response:", response.status, responseText);
-        result = JSON.parse(responseText);
+        result = await response.json();
       } catch (e) {
-        console.error("Error parsing response:", e);
-        // Assume success based on response status
-        result = {
-          message: isPrivate 
-            ? "Join request sent successfully" 
-            : "You've joined the group successfully",
-          joined: !isPrivate,
-          pending: isPrivate
-        };
+        // If not JSON, get text
+        const text = await response.text();
+        result = { message: text };
       }
       
       if (!response.ok) {
-        throw new Error(result.message || "Failed to join group");
+        throw new Error(result.message || `Failed to ${isPrivate ? 'request to join' : 'join'} group`);
       }
       
-      // Add notification
-      const newNotification = {
-        id: Date.now(),
-        message: result.message || (result.joined ? "Successfully joined group" : "Join request sent"),
-        type: result.joined ? "success" : "info"
-      };
-      setNotifications([...notifications, newNotification]);
+      // Show success message
+      setSuccessMessage(result.message || `You've ${isPrivate ? 'requested to join' : 'joined'} the group successfully`);
       
-      // Update join status for this group
-      setJoinStatus(prev => ({
+      // Update the local state to reflect the change
+      setUserStatuses(prev => ({
         ...prev,
         [groupId]: {
-          ...prev[groupId],
-          isMember: result.joined,
-          hasJoinRequest: result.pending
+          isAdmin: false,
+          isMember: !isPrivate,
+          hasPendingRequest: isPrivate,
+          status: isPrivate ? 'pending' : 'member'
         }
       }));
       
-      // Update the group in the list
-      setStudyGroups(prev => 
-        prev.map(group => 
-          group._id === groupId 
-            ? { 
-                ...group, 
-                isMember: result.joined,
-                hasJoinRequest: result.pending,
-                memberCount: result.joined ? (group.memberCount || 0) + 1 : group.memberCount
-              } 
-            : group
-        )
-      );
+      // Navigate back to home after a delay
+      setTimeout(() => {
+        navigate('/home', { state: { refreshGroups: true } });
+      }, 2000);
       
     } catch (err) {
-      console.error("❌ Join error:", err);
-      const newNotification = {
-        id: Date.now(),
-        message: err.message || "Failed to join group",
-        type: "error"
-      };
-      setNotifications([...notifications, newNotification]);
+      console.error("Error joining group:", err);
+      setError(err.message);
     }
   };
-
-  const dismissNotification = (id) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
+  
+  const clearMessages = () => {
+    setError(null);
+    setSuccessMessage(null);
   };
-
-  const handleCreateGroup = () => {
-    if (classDetails) {
-      navigate(`/create-study-group?classId=${classId}`, {
-        state: { classDetails }
-      });
-    } else {
-      navigate(`/create-study-group?classId=${classId}`);
-    }
-  };
-
-  const renderJoinButton = (group) => {
-    const status = joinStatus[group._id];
-    
-    if (!status) return null;
-    
-    if (status.isAdmin) {
-      return (
-        <div className="text-gray-600 dark:text-gray-400">
-          You are the admin
-        </div>
-      );
-    }
-    
-    if (status.isMember) {
-      return (
-        <div className="text-green-600 dark:text-green-400">
-          You are a member
-        </div>
-      );
-    }
-    
-    if (status.hasJoinRequest) {
-      return (
-        <div className="text-yellow-600 dark:text-yellow-400">
-          Join request pending
-        </div>
-      );
-    }
-    
-    return (
-      <button
-        onClick={() => handleJoinGroup(group._id, group.isPrivate)}
-        className="px-4 py-2 bg-yellow-700 hover:bg-yellow-800 text-white rounded"
-      >
-        {group.isPrivate ? "Request to Join" : "Join Group"}
-      </button>
-    );
-  };
-
-  if (isLoading) {
+  
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Loading...</div>
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
       {/* Navigation Bar */}
@@ -505,131 +222,136 @@ const ClassStudyGroups = () => {
           </div>
         </div>
       </nav>
-
-      {/* Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map(notification => (
-          <div 
-            key={notification.id}
-            className={`px-4 py-3 rounded shadow-md ${
-              notification.type === 'error' ? 'bg-red-100 text-red-800' :
-              notification.type === 'success' ? 'bg-green-100 text-green-800' :
-              'bg-blue-100 text-blue-800'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div>{notification.message}</div>
-              <button 
-                onClick={() => dismissNotification(notification.id)}
-                className="ml-4 text-gray-500 hover:text-gray-700"
-              >
+      
+      {/* Success Message (if any) */}
+      {successMessage && (
+        <div className="max-w-7xl mx-auto px-4 py-2 mt-2">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            <div className="flex justify-between">
+              <div>
+                <strong>Success!</strong> {successMessage}
+              </div>
+              <button onClick={clearMessages} className="text-green-700">
                 &times;
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
+        </div>
+      )}
+      
+      {/* Error Message (if any) */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 py-2 mt-2">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div className="flex justify-between">
+              <div>
+                <strong>Error:</strong> {error}
+              </div>
+              <button onClick={clearMessages} className="text-red-700">
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Study Groups for {classDetails?.courseCode || "Class"}
+              <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                Study Groups for {classDetails?.courseCode}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {classDetails?.title || "Loading class details..."}
+              <p className="text-gray-600 dark:text-gray-400">
+                {classDetails?.title}
               </p>
-              {currentUser && (
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  Logged in as: {currentUser.username || currentUser.email || currentUser._id}
-                </p>
-              )}
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Logged in as: {currentUserId}
+              </p>
             </div>
-            <div className="mt-4 md:mt-0">
-              <button
-                onClick={handleCreateGroup}
-                className="px-4 py-2 bg-yellow-700 hover:bg-yellow-800 text-white rounded"
-              >
-                Create New Study Group
-              </button>
-            </div>
+            <button
+              onClick={() => navigate(`/create-study-group?classId=${classId}`)}
+              className="bg-yellow-700 text-white px-4 py-2 rounded hover:bg-yellow-800"
+            >
+              Create New Study Group
+            </button>
           </div>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              <strong>Error:</strong> {error}
-              <p className="text-sm mt-1">
-                You can still create a new study group for this class by clicking the button above.
-              </p>
-            </div>
-          )}
-
-          {mockMode && (
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
-              <strong>Notice:</strong> Operating in fallback mode. Some features may be limited.
-            </div>
-          )}
-
-          {/* Search */}
-          <div className="mb-6">
-            <form onSubmit={handleSearch} className="flex">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search study groups..."
-                className="flex-1 shadow appearance-none border rounded-l py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-              <button
-                type="submit"
-                className="bg-yellow-700 hover:bg-yellow-800 text-white py-2 px-4 rounded-r"
-              >
-                Search
-              </button>
-            </form>
-          </div>
-
-          {/* Study Groups List */}
-          {studyGroups.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600 dark:text-gray-400">No study groups found for this class.</p>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Be the first to create a study group for this class!
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {studyGroups.map(group => (
-                <div key={group._id} className="border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{group.name}</h3>
-                      {group.isPrivate && (
-                        <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded">
-                          Private
+        </div>
+        
+        {/* Study Groups List */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Available Study Groups</h2>
+          
+          {studyGroups.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {studyGroups.map((group) => {
+                const userStatus = userStatuses[group._id] || {
+                  isAdmin: false,
+                  isMember: false,
+                  hasPendingRequest: false,
+                  status: 'none'
+                };
+                
+                const isAdmin = userStatus.isAdmin;
+                const isMember = userStatus.isMember;
+                const hasPendingRequest = userStatus.hasPendingRequest;
+                
+                return (
+                  <div key={group._id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{group.name}</h3>
+                    <div className="flex items-center mt-1 mb-2">
+                      <span className={`px-2 py-1 rounded text-xs ${group.isPrivate ? "bg-gray-200 text-gray-800" : "bg-green-200 text-green-800"}`}>
+                        {group.isPrivate ? "Private Group" : "Public Group"}
+                      </span>
+                      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        {group.members?.length || 0} members
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-500 mb-4">
+                      Admin: {group.adminId === currentUserId ? 'You' : 'Another user'}
+                    </p>
+                    
+                    <div className="mt-4 flex justify-between items-center">
+                      <button
+                        onClick={() => navigate(`/groups/${group._id}`)}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        View Details
+                      </button>
+                      
+                      {/* Join button logic based on user status */}
+                      {isAdmin ? (
+                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded">
+                          You are the Admin
                         </span>
+                      ) : isMember ? (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded">
+                          Already a Member
+                        </span>
+                      ) : hasPendingRequest ? (
+                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded">
+                          Request Pending
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleJoinGroup(group._id, group.isPrivate)}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          {group.isPrivate ? "Request to Join" : "Join Group"}
+                        </button>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      Members: {group.memberCount || (group.members && group.members.length) || 0}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Admin: {joinStatus[group._id]?.isAdmin ? 'You' : 'Another user'}
-                    </p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-between">
-                    <button
-                      onClick={() => navigate(`/groups/${group._id}`)}
-                      className="text-yellow-700 dark:text-yellow-500 hover:underline"
-                    >
-                      View Details
-                    </button>
-                    {renderJoinButton(group)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-gray-600 dark:text-gray-400">
+                No study groups available for this class yet. Be the first to create one!
+              </p>
             </div>
           )}
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
-const API_URL = "http://localhost:5001"; 
+const API_URL = "http://localhost:5001";
 const MIN_CREDIT_HOURS = 12;
 
 const Home = () => {
@@ -31,7 +31,8 @@ const Home = () => {
 
   useEffect(() => {
     // Load completed classes from localStorage
-    const completed = JSON.parse(localStorage.getItem('completedClasses')) || [];
+    const completed =
+      JSON.parse(localStorage.getItem("completedClasses")) || [];
     setCompletedClasses(completed);
   }, []);
 
@@ -53,15 +54,17 @@ const Home = () => {
         console.log("User data fetched:", data);
         setUser(data);
         fetchUserClasses(data._id);
-        
+
         // Force refresh if coming from study group creation
         if (shouldRefreshGroups && newGroupId) {
-          console.log(`Will fetch groups with focus on new group: ${newGroupId}`);
+          console.log(
+            `Will fetch groups with focus on new group: ${newGroupId}`
+          );
           fetchUserStudyGroups(data._id, newGroupId);
         } else {
           fetchUserStudyGroups(data._id);
         }
-        
+
         // Fetch pending join requests
         fetchPendingJoinRequests(data._id);
       } catch (err) {
@@ -73,16 +76,19 @@ const Home = () => {
     };
 
     fetchUser();
-    
+
     // No auto-refresh intervals
   }, [navigate, shouldRefreshGroups, newGroupId]);
 
   const fetchUserClasses = async (userId) => {
     try {
       console.log(`Fetching classes for user ${userId}...`);
-      const res = await fetch(`${API_URL}/api/courses/user/${userId}/enrolled`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_URL}/api/courses/user/${userId}/enrolled`,
+        {
+          credentials: "include",
+        }
+      );
 
       if (!res.ok) {
         throw new Error("Failed to fetch enrolled classes");
@@ -91,7 +97,9 @@ const Home = () => {
       const data = await res.json();
       console.log("Classes fetched:", data);
       setUserClasses(data);
-      setTotalCredits(data.reduce((sum, classItem) => sum + (classItem.creditHours || 0), 0));
+      setTotalCredits(
+        data.reduce((sum, classItem) => sum + (classItem.creditHours || 0), 0)
+      );
     } catch (err) {
       console.error("❌ Error fetching enrolled classes:", err);
       setErrorMessage(err.message);
@@ -101,20 +109,20 @@ const Home = () => {
   const fetchPendingJoinRequests = async (userId) => {
     try {
       console.log("Fetching pending join requests...");
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       };
-      
+
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       const res = await fetch(`${API_URL}/api/groups/pending-requests`, {
         headers,
-        credentials: "include"
+        credentials: "include",
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         console.log("Pending join requests fetched:", data);
@@ -130,23 +138,32 @@ const Home = () => {
       console.log(`Fetching study groups for user ${userId}...`);
       // Add cache-busting query parameter
       const timestamp = new Date().getTime();
-      const res = await fetch(`${API_URL}/api/groups/user/${userId}?t=${timestamp}`, {
-        credentials: "include",
-        // Force no-cache to ensure we get fresh data
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+      const headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+        "X-User-ID": userId, // Add this line
+      };
+
+      const res = await fetch(
+        `${API_URL}/api/groups/user/${userId}?t=${timestamp}`,
+        {
+          credentials: "include",
+          headers,
         }
-      });
+      );
 
       console.log("Study groups response status:", res.status);
-      
+
       if (!res.ok) {
-        console.error("Failed to fetch study groups:", res.status, res.statusText);
+        console.error(
+          "Failed to fetch study groups:",
+          res.status,
+          res.statusText
+        );
         const errorText = await res.text();
         console.error("Error response:", errorText);
-        
+
         // Use fallback from localStorage if API fails
         tryFallbackGroups(userId, highlightGroupId);
         return;
@@ -154,32 +171,34 @@ const Home = () => {
 
       const data = await res.json();
       console.log("Study groups fetched:", data);
-      
+
       if (Array.isArray(data) && data.length > 0) {
         // Ensure we have class details for each group
-        const groupsWithClasses = data.map(group => {
+        const groupsWithClasses = data.map((group) => {
           // Find the corresponding class in userClasses by ID
           if (group.classId && userClasses.length > 0) {
-            const classInfo = userClasses.find(c => c._id === group.classId);
+            const classInfo = userClasses.find((c) => c._id === group.classId);
             if (classInfo) {
               return {
                 ...group,
                 class: {
                   _id: classInfo._id,
                   courseCode: classInfo.courseCode || "Unknown",
-                  title: classInfo.title || "Unknown"
-                }
+                  title: classInfo.title || "Unknown",
+                },
               };
             }
           }
           return group;
         });
-        
+
         setStudyGroups(groupsWithClasses);
-        
+
         // If we have a new group ID to highlight, make sure it's in the list
-        if (highlightGroupId && !data.some(g => g._id === highlightGroupId)) {
-          console.log(`New group ${highlightGroupId} not found in API response, trying fallback...`);
+        if (highlightGroupId && !data.some((g) => g._id === highlightGroupId)) {
+          console.log(
+            `New group ${highlightGroupId} not found in API response, trying fallback...`
+          );
           tryFallbackGroups(userId, highlightGroupId, groupsWithClasses);
         }
       } else {
@@ -192,41 +211,53 @@ const Home = () => {
       tryFallbackGroups(userId, highlightGroupId);
     }
   };
-  
+
   // Fallback method to get study groups from localStorage if API fails
   const tryFallbackGroups = (userId, highlightGroupId, existingGroups = []) => {
     try {
-      const createdGroups = JSON.parse(localStorage.getItem('createdStudyGroups') || '[]');
+      const createdGroups = JSON.parse(
+        localStorage.getItem("createdStudyGroups") || "[]"
+      );
       console.log("Fallback: Created groups from localStorage:", createdGroups);
-      
+
       if (createdGroups.length > 0) {
         // Filter for this user's groups
-        const userGroups = createdGroups.filter(g => g.adminId === userId || g.members.includes(userId));
-        
+        const userGroups = createdGroups.filter(
+          (g) => g.adminId === userId || g.members.includes(userId)
+        );
+
         if (userGroups.length > 0) {
           // If we have a new group to highlight, make sure it's included
           let updatedGroups = [...existingGroups];
-          
+
           if (highlightGroupId) {
-            const highlightGroup = createdGroups.find(g => g._id === highlightGroupId);
-            if (highlightGroup && !updatedGroups.some(g => g._id === highlightGroupId)) {
+            const highlightGroup = createdGroups.find(
+              (g) => g._id === highlightGroupId
+            );
+            if (
+              highlightGroup &&
+              !updatedGroups.some((g) => g._id === highlightGroupId)
+            ) {
               updatedGroups.push(highlightGroup);
             }
           }
-          
+
           // Add any other local groups not in the API response
-          userGroups.forEach(localGroup => {
-            if (!updatedGroups.some(g => g._id === localGroup._id)) {
+          userGroups.forEach((localGroup) => {
+            if (!updatedGroups.some((g) => g._id === localGroup._id)) {
               updatedGroups.push(localGroup);
             }
           });
-          
-          console.log("Setting study groups with fallback data:", updatedGroups);
+
+          console.log(
+            "Setting study groups with fallback data:",
+            updatedGroups
+          );
           setStudyGroups(updatedGroups);
         }
       } else if (highlightGroupId) {
         // Last resort: check if we have the ID of the last created group
-        const lastGroupId = localStorage.getItem('lastCreatedGroupId');
+        const lastGroupId = localStorage.getItem("lastCreatedGroupId");
         if (lastGroupId === highlightGroupId) {
           // Create a placeholder group
           const placeholder = {
@@ -235,9 +266,9 @@ const Home = () => {
             adminId: userId,
             members: [userId],
             createdAt: new Date().toISOString(),
-            isPlaceholder: true
+            isPlaceholder: true,
           };
-          
+
           console.log("Adding placeholder group:", placeholder);
           setStudyGroups([...existingGroups, placeholder]);
         }
@@ -266,14 +297,15 @@ const Home = () => {
     }
   };
 
-  const handleAddClass = () => navigate('/add-class');
-  const handleDeleteClass = () => navigate('/delete-class');
-  const handleDeleteCompletedClass = () => navigate('/delete-completed-class');
-  const handleViewProfile = () => navigate('/profile');
-  const handleCreateStudyGroup = () => navigate('/create-study-group');
+  const handleAddClass = () => navigate("/add-class");
+  const handleDeleteClass = () => navigate("/delete-class");
+  const handleDeleteCompletedClass = () => navigate("/delete-completed-class");
+  const handleViewProfile = () => navigate("/profile");
+  const handleCreateStudyGroup = () => navigate("/create-study-group");
   const handleViewStudyGroup = (groupId) => navigate(`/study-group/${groupId}`);
-  const handleViewClassGroups = (classId) => navigate(`/class/${classId}/groups`);
-  const handleViewPendingRequests = () => navigate('/pending-requests');
+  const handleViewClassGroups = (classId) =>
+    navigate(`/class/${classId}/groups`);
+  const handleViewPendingRequests = () => navigate("/pending-requests");
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleMarkAsComplete = (classToComplete) => {
@@ -283,31 +315,37 @@ const Home = () => {
       code: classToComplete.courseCode,
       name: classToComplete.title,
       credits: classToComplete.creditHours,
-      completed: true
+      completed: true,
     };
 
     // Remove from enrolled classes by calling the API
     if (user && user._id) {
       // This would normally make an API call to unenroll
       // For now, we'll just remove it locally
-      const updatedEnrolled = userClasses.filter((c) => c._id !== classToComplete._id);
+      const updatedEnrolled = userClasses.filter(
+        (c) => c._id !== classToComplete._id
+      );
       setUserClasses(updatedEnrolled);
-      setTotalCredits(updatedEnrolled.reduce((sum, item) => sum + (item.creditHours || 0), 0));
+      setTotalCredits(
+        updatedEnrolled.reduce((sum, item) => sum + (item.creditHours || 0), 0)
+      );
     }
 
     // Add to completed classes in localStorage
     const updatedCompleted = [...completedClasses, completedClass];
     setCompletedClasses(updatedCompleted);
-    localStorage.setItem('completedClasses', JSON.stringify(updatedCompleted));
+    localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
   };
 
   const handleRemoveCompletedClass = (classToRemove) => {
     // Filter out the class to be removed
-    const updatedCompleted = completedClasses.filter((c) => c._id !== classToRemove._id);
+    const updatedCompleted = completedClasses.filter(
+      (c) => c._id !== classToRemove._id
+    );
     setCompletedClasses(updatedCompleted);
     localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
   };
-  
+
   // Force refresh button handler
   const handleForceRefresh = () => {
     if (user && user._id) {
@@ -320,7 +358,9 @@ const Home = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Loading...</div>
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          Loading...
+        </div>
       </div>
     );
   }
@@ -332,7 +372,9 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">Boiler Resources</span>
+              <span className="text-white text-xl font-bold">
+                Boiler Resources
+              </span>
             </div>
             <div className="relative flex items-center gap-4">
               {user ? (
@@ -384,13 +426,16 @@ const Home = () => {
           </div>
         </div>
       </nav>
-      
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to Boiler Resources</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            Welcome to Boiler Resources
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            This is your dashboard where you can access and manage your resources.
+            This is your dashboard where you can access and manage your
+            resources.
           </p>
         </div>
 
@@ -398,24 +443,26 @@ const Home = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Enrolled Classes</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {user ? `${user.username}'s` : "Your"} Enrolled Classes
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Total Credits: {totalCredits} 
-                {totalCredits < MIN_CREDIT_HOURS && 
+                Total Credits: {totalCredits}
+                {totalCredits < MIN_CREDIT_HOURS && (
                   <span className="text-red-500 dark:text-red-400 ml-2">
                     (Minimum: {MIN_CREDIT_HOURS})
                   </span>
-                }
+                )}
               </p>
             </div>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={handleAddClass}
                 className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
               >
                 Add Class
               </button>
-              <button 
+              <button
                 onClick={handleDeleteClass}
                 className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition"
               >
@@ -433,28 +480,34 @@ const Home = () => {
           {userClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userClasses.map((classItem) => (
-                <div 
-                  key={classItem._id} 
+                <div
+                  key={classItem._id}
                   className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
                 >
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.courseCode}</h3>
-                  <p className="text-gray-800 dark:text-gray-200">{classItem.title}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.creditHours}</p>
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {classItem.courseCode}
+                  </h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {classItem.title}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Credits: {classItem.creditHours}
+                  </p>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <button 
+                    <button
                       onClick={() => navigate(`/class/${classItem._id}`)}
                       className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                     >
                       Details
                     </button>
                     {/* New button for Study Groups */}
-                    <button 
+                    <button
                       onClick={() => handleViewClassGroups(classItem._id)}
                       className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition"
                     >
                       Study Groups
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleMarkAsComplete(classItem)}
                       className="bg-purple-600 dark:bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition"
                     >
@@ -465,83 +518,102 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">You haven't added any classes yet. Click "Add Class" to get started.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              You haven't added any classes yet. Click "Add Class" to get
+              started.
+            </p>
           )}
         </div>
-        
+
         {/* Study Groups Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Study Groups</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {user ? `${user.username}'s` : "Your"} Study Groups
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Connect with classmates and study together.
                 {pendingJoinRequests.length > 0 && (
                   <span className="ml-2 text-yellow-600 dark:text-yellow-400 font-semibold">
-                    (You have {pendingJoinRequests.length} pending join requests)
+                    (You have {pendingJoinRequests.length} pending join
+                    requests)
                   </span>
                 )}
               </p>
             </div>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={handleCreateStudyGroup}
                 className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
-                style={{display: 'block'}}
+                style={{ display: "block" }}
               >
                 Create Study Group
               </button>
               {pendingJoinRequests.length > 0 && (
-                <button 
+                <button
                   onClick={handleViewPendingRequests}
                   className="bg-yellow-600 dark:bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 transition"
                 >
                   View Pending Requests
                 </button>
               )}
-              <button 
+              <button
                 onClick={handleForceRefresh}
                 className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
-                style={{display: 'block'}}
+                style={{ display: "block" }}
               >
                 Refresh Groups
               </button>
             </div>
           </div>
-          
+
           {studyGroups.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {studyGroups.map((group) => (
-                <div key={group._id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{group.name}</h3>
+                <div
+                  key={group._id}
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {group.name}
+                  </h3>
                   <p className="text-gray-800 dark:text-gray-200">
-                    {group.class?.courseCode ? 
-                      `${group.class.courseCode} - ${group.class.title}` : 
-                      (userClasses.find(c => c._id === group.classId) ? 
-                        `${userClasses.find(c => c._id === group.classId).courseCode} - ${userClasses.find(c => c._id === group.classId).title}` :
-                        "Class information unavailable")}
+                    {group.class?.courseCode
+                      ? `${group.class.courseCode} - ${group.class.title}`
+                      : userClasses.find((c) => c._id === group.classId)
+                      ? `${
+                          userClasses.find((c) => c._id === group.classId)
+                            .courseCode
+                        } - ${
+                          userClasses.find((c) => c._id === group.classId).title
+                        }`
+                      : "Class information unavailable"}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {group.isPrivate ? "Private Group" : "Public Group"} • {group.memberCount || group.members?.length || 0} members
+                    {group.isPrivate ? "Private Group" : "Public Group"} •{" "}
+                    {group.memberCount || group.members?.length || 0} members
                   </p>
-                  
+
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <button 
+                    <button
                       onClick={() => handleViewStudyGroup(group._id)}
                       className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                     >
                       View Group
                     </button>
                     {/* New button for the enhanced group details */}
-                    <button 
+                    <button
                       onClick={() => navigate(`/groups/${group._id}`)}
                       className="bg-teal-600 dark:bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition"
                     >
                       Group Details
                     </button>
                     {group.adminId === user._id && (
-                      <button 
-                        onClick={() => navigate(`/manage-study-group/${group._id}`)}
+                      <button
+                        onClick={() =>
+                          navigate(`/manage-study-group/${group._id}`)
+                        }
                         className="bg-purple-600 dark:bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition"
                       >
                         Manage
@@ -552,7 +624,10 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">You haven't joined any study groups yet. Create one or search for existing groups.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              You haven't joined any study groups yet. Create one or search for
+              existing groups.
+            </p>
           )}
         </div>
 
@@ -560,21 +635,32 @@ const Home = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user ? `${user.username}'s` : 'Your'} Completed Classes</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {user ? `${user.username}'s` : "Your"} Completed Classes
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Keep track of the courses you've already completed.
               </p>
             </div>
           </div>
-          
+
           {completedClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {completedClasses.map((classItem, index) => (
-                <div key={classItem._id || index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.code}</h3>
-                  <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
-                  <button 
+                <div
+                  key={classItem._id || index}
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {classItem.code}
+                  </h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {classItem.name}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Credits: {classItem.credits}
+                  </p>
+                  <button
                     onClick={() => handleRemoveCompletedClass(classItem)}
                     className="mt-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                   >
@@ -584,25 +670,40 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">You don't have any completed classes yet. Mark classes as complete from your enrolled classes.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              You don't have any completed classes yet. Mark classes as complete
+              from your enrolled classes.
+            </p>
           )}
         </div>
 
         {/* Resource Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">My Resources</h2>
-            <p className="text-gray-600 dark:text-gray-400">View and manage your saved resources</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              My Resources
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              View and manage your saved resources
+            </p>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Browse Categories</h2>
-            <p className="text-gray-600 dark:text-gray-400">Explore resources by category</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              Browse Categories
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Explore resources by category
+            </p>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Community</h2>
-            <p className="text-gray-600 dark:text-gray-400">Connect with other users</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              Community
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Connect with other users
+            </p>
           </div>
         </div>
       </div>

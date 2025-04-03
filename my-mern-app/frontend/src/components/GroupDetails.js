@@ -18,68 +18,16 @@ const GroupDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [joinRequestSent, setJoinRequestSent] = useState(false);
   
-  useEffect(() => {
-    const fetchGroupDetails = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        const headers = {
-          "Content-Type": "application/json"
-        };
-        
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
-        // Fetch group details
-        const groupRes = await fetch(`${API_URL}/api/groups/${groupId}`, {
-          headers,
-          credentials: "include"
-        });
-        
-        if (!groupRes.ok) {
-          throw new Error("Failed to fetch group details");
-        }
-        
-        const groupData = await groupRes.json();
-        setGroup(groupData);
-        
-        // Fetch members
-        const membersRes = await fetch(`${API_URL}/api/groups/${groupId}/members`, {
-          headers,
-          credentials: "include"
-        });
-        
-        if (membersRes.ok) {
-          const membersData = await membersRes.json();
-          setMembers(membersData);
-        }
-        
-        // Check user's status in the group
-        const statusRes = await fetch(`${API_URL}/api/groups/${groupId}/user-status`, {
-          headers,
-          credentials: "include"
-        });
-        
-        if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          setUserStatus(statusData);
-        }
-      } catch (err) {
-        console.error("❌ Error:", err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchGroupDetails();
-  }, [groupId]);
-  
-  const handleJoinGroup = async () => {
+  // Function to fetch all data
+  const fetchAllData = async () => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      console.log("Current user ID:", userId);
+      
       const headers = {
         "Content-Type": "application/json"
       };
@@ -88,22 +36,126 @@ const GroupDetails = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`${API_URL}/api/groups/${groupId}/join`, {
+      if (userId) {
+        headers["X-User-ID"] = userId;
+      }
+      
+      // Fetch group details
+      const groupRes = await fetch(`${API_URL}/api/groups/${groupId}`, {
+        headers,
+        credentials: "include"
+      });
+      
+      if (!groupRes.ok) {
+        throw new Error("Failed to fetch group details");
+      }
+      
+      const groupData = await groupRes.json();
+      console.log("Group data:", groupData);
+      setGroup(groupData);
+      
+      // Fetch members
+      const membersRes = await fetch(`${API_URL}/api/groups/${groupId}/members`, {
+        headers,
+        credentials: "include"
+      });
+      
+      if (membersRes.ok) {
+        const membersData = await membersRes.json();
+        setMembers(membersData);
+      }
+      
+      // Check user's status in the group using the API instead of client-side validation
+      try {
+        const statusRes = await fetch(`${API_URL}/api/groups/${groupId}/user-status`, {
+          headers,
+          credentials: "include"
+        });
+        
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          console.log("User status data:", statusData);
+          setUserStatus(statusData);
+        } else {
+          console.error("Failed to fetch user status:", await statusRes.text());
+          // Default to non-member if status check fails
+          setUserStatus({
+            status: 'none',
+            isAdmin: false,
+            isMember: false,
+            hasPendingRequest: false
+          });
+        }
+      } catch (statusErr) {
+        console.error("Error fetching user status:", statusErr);
+        // Default to non-member if status check errors
+        setUserStatus({
+          status: 'none',
+          isAdmin: false,
+          isMember: false,
+          hasPendingRequest: false
+        });
+      }
+    } catch (err) {
+      console.error("❌ Error:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchAllData();
+  }, [groupId, joinRequestSent]);
+  
+  const handleJoinGroup = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      if (userId) {
+        headers["X-User-ID"] = userId;
+      }
+      
+      console.log(`Attempting to join group ${groupId}`);
+      const response = await fetch(`${API_URL}/api/groups/${groupId}/join-request`, {
         method: "POST",
         headers,
         credentials: "include"
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to join group");
+      // Get both text and status for better debugging
+      const responseText = await response.text();
+      console.log("Join response:", response.status, responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Error parsing JSON response:", e);
+        result = { 
+          message: responseText || "Request processed but no details available",
+          joined: !group.isPrivate, // Assume joined directly if public
+          pending: group.isPrivate  // Assume pending if private
+        };
       }
       
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to join group");
+      }
       
       setSuccess(result.message);
+      setJoinRequestSent(true);
       
-      // Update user status
+      // Update user status based on response
       setUserStatus(prev => ({
         ...prev,
         status: result.joined ? 'member' : (result.pending ? 'pending' : prev.status),
@@ -138,12 +190,18 @@ const GroupDetails = () => {
   const handleLeaveGroup = async () => {
     try {
       const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
       const headers = {
         "Content-Type": "application/json"
       };
       
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      if (userId) {
+        headers["X-User-ID"] = userId;
       }
       
       const response = await fetch(`${API_URL}/api/groups/${groupId}/leave`, {
@@ -170,7 +228,6 @@ const GroupDetails = () => {
       }));
       
       // Remove user from members list
-      const userId = localStorage.getItem('userId');
       setMembers(members.filter(member => member._id !== userId));
       
       // Clear success message after 3 seconds
@@ -182,6 +239,11 @@ const GroupDetails = () => {
       // Clear error message after 3 seconds
       setTimeout(() => setError(null), 3000);
     }
+  };
+  
+  const handleViewChat = () => {
+    // Navigate to the chat page for this group
+    navigate(`/group-chat/${groupId}`);
   };
   
   if (isLoading) {
@@ -199,6 +261,12 @@ const GroupDetails = () => {
       </div>
     );
   }
+  
+  // Use only the server-provided user status for rendering
+  // Don't override with client-side logic
+  const isUserAdmin = userStatus.isAdmin;
+  const isUserMember = userStatus.isMember;
+  const hasVisiblePendingRequest = userStatus.hasPendingRequest || joinRequestSent;
   
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
@@ -242,7 +310,7 @@ const GroupDetails = () => {
                       Private
                     </span>
                   )}
-                  {userStatus.isAdmin && (
+                  {isUserAdmin && (
                     <span className="bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 text-xs px-2 py-1 rounded">
                       Admin
                     </span>
@@ -264,7 +332,7 @@ const GroupDetails = () => {
               
               {/* Action Buttons */}
               <div className="mt-6 flex flex-wrap gap-2">
-                {userStatus.isAdmin && (
+                {isUserAdmin && (
                   <button
                     onClick={() => navigate(`/groups/${groupId}/requests`)}
                     className="px-4 py-2 bg-yellow-700 hover:bg-yellow-800 text-white rounded"
@@ -273,7 +341,19 @@ const GroupDetails = () => {
                   </button>
                 )}
                 
-                {userStatus.isMember && !userStatus.isAdmin && (
+                {(isUserMember || isUserAdmin) && (
+                  <button
+                    onClick={handleViewChat}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    </svg>
+                    View Chat
+                  </button>
+                )}
+                
+                {isUserMember && !isUserAdmin && (
                   <button
                     onClick={handleLeaveGroup}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
@@ -282,7 +362,7 @@ const GroupDetails = () => {
                   </button>
                 )}
                 
-                {!userStatus.isMember && !userStatus.hasPendingRequest && (
+                {!isUserMember && !hasVisiblePendingRequest && !isUserAdmin && (
                   <button
                     onClick={handleJoinGroup}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
@@ -291,7 +371,7 @@ const GroupDetails = () => {
                   </button>
                 )}
                 
-                {userStatus.hasPendingRequest && (
+                {hasVisiblePendingRequest && (
                   <div className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 rounded">
                     Join Request Pending
                   </div>
@@ -313,7 +393,7 @@ const GroupDetails = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Role
                         </th>
-                        {userStatus.isAdmin && (
+                        {isUserAdmin && (
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Actions
                           </th>
@@ -343,7 +423,7 @@ const GroupDetails = () => {
                               {member._id === group.adminId ? 'Admin' : 'Member'}
                             </span>
                           </td>
-                          {userStatus.isAdmin && (
+                          {isUserAdmin && (
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                               {member._id !== group.adminId && (
                                 <button
@@ -370,7 +450,7 @@ const GroupDetails = () => {
           
           {/* Right Column - Pending Requests */}
           <div>
-            {userStatus.hasPendingRequest && (
+            {hasVisiblePendingRequest && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                   Your Request Status
@@ -383,8 +463,8 @@ const GroupDetails = () => {
               </div>
             )}
             
-            {/* If the user has other pending requests, show them here */}
-            <PendingJoinRequests />
+            {/* Render pending join requests */}
+            {!isUserAdmin && <PendingJoinRequests key={joinRequestSent ? "updated" : "initial"} />}
           </div>
         </div>
       </div>

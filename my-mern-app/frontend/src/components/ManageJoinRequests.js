@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -20,6 +19,11 @@ const ManageJoinRequests = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        // First check for userId in localStorage
+        const userId = localStorage.getItem('userId');
+        console.log("Using user ID from localStorage:", userId);
+        
+        // Get token
         const token = localStorage.getItem('token');
         const headers = {
           "Content-Type": "application/json"
@@ -29,31 +33,64 @@ const ManageJoinRequests = () => {
           headers["Authorization"] = `Bearer ${token}`;
         }
         
-        // Fetch group details
+        // Add explicit userId to request headers
+        if (userId) {
+          headers["X-User-ID"] = userId;
+        }
+        
+        // Fetch group details first to check admin permissions
+        console.log(`Fetching group ${groupId} details`);
         const groupRes = await fetch(`${API_URL}/api/groups/${groupId}`, {
           headers,
           credentials: "include"
         });
         
         if (!groupRes.ok) {
+          const groupError = await groupRes.text();
+          console.error("Error fetching group:", groupError);
           throw new Error("Failed to fetch group details");
         }
         
         const groupData = await groupRes.json();
+        console.log("Group data:", groupData);
         setGroup(groupData);
         
-        // Fetch join requests
-        const requestsRes = await fetch(`${API_URL}/api/groups/${groupId}/join-requests`, {
-          headers,
+        // Check if user is the admin
+        if (groupData.adminId !== userId) {
+          console.warn(`User ID ${userId} doesn't match admin ID ${groupData.adminId}`);
+        }
+        
+        // Explicitly include admin ID in the URL for backend verification
+        console.log(`Fetching join requests for group ${groupId} (admin: ${groupData.adminId})`);
+        
+        // Try to fetch join requests with explicit admin ID
+        const requestsRes = await fetch(`${API_URL}/api/groups/${groupId}/join-requests?adminId=${groupData.adminId}`, {
+          headers: {
+            ...headers,
+            "X-Admin-ID": groupData.adminId  // Add admin ID to headers as well
+          },
           credentials: "include"
         });
         
         if (!requestsRes.ok) {
-          throw new Error("Failed to fetch join requests");
+          const errorText = await requestsRes.text();
+          console.error("Failed to fetch join requests:", errorText);
+          
+          // Since the API failed, let's try to get join requests directly from the group data
+          if (groupData.joinRequests && Array.isArray(groupData.joinRequests) && groupData.joinRequests.length > 0) {
+            console.log("Using join requests from group data:", groupData.joinRequests);
+            setJoinRequests(groupData.joinRequests);
+            setError("Using cached join requests (API request failed)");
+          } else {
+            setJoinRequests([]);
+            setError("Failed to fetch join requests. This could be a temporary issue or there might be no pending requests.");
+          }
+        } else {
+          // Successfully fetched join requests from API
+          const requestsData = await requestsRes.json();
+          console.log("Join requests fetched:", requestsData);
+          setJoinRequests(requestsData);
         }
-        
-        const requestsData = await requestsRes.json();
-        setJoinRequests(requestsData);
       } catch (err) {
         console.error("❌ Error:", err);
         setError(err.message);
@@ -67,6 +104,7 @@ const ManageJoinRequests = () => {
   
   const handleApproveRequest = async (requestId) => {
     try {
+      const userId = localStorage.getItem('userId');
       const token = localStorage.getItem('token');
       const headers = {
         "Content-Type": "application/json"
@@ -76,27 +114,46 @@ const ManageJoinRequests = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
+      if (userId) {
+        headers["X-User-ID"] = userId;
+      }
+      
+      if (group && group.adminId) {
+        headers["X-Admin-ID"] = group.adminId;
+      }
+      
+      console.log(`Approving request ${requestId} for group ${groupId}`);
+      
       const response = await fetch(`${API_URL}/api/groups/${groupId}/approve-request/${requestId}`, {
         method: "POST",
         headers,
-        credentials: "include"
+        credentials: "include",
+        body: JSON.stringify({ 
+          adminId: group?.adminId,
+          userId: localStorage.getItem('userId')
+        })
       });
       
+      const responseText = await response.text();
+      console.log("Approve response:", response.status, responseText);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to approve request");
+        throw new Error(`Failed to approve request: ${responseText}`);
       }
       
       // Remove the approved request from the list
       setJoinRequests(joinRequests.filter(request => request._id !== requestId));
       
-      setSuccess("Join request approved successfully. The user has been added to the group.");
+      setSuccess("Join request approved successfully.");
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("❌ Error approving request:", err);
       setError(err.message);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => setError(null), 3000);
     }
   };
   
@@ -113,6 +170,7 @@ const ManageJoinRequests = () => {
   
   const handleRejectRequest = async () => {
     try {
+      const userId = localStorage.getItem('userId');
       const token = localStorage.getItem('token');
       const headers = {
         "Content-Type": "application/json"
@@ -122,16 +180,32 @@ const ManageJoinRequests = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
+      if (userId) {
+        headers["X-User-ID"] = userId;
+      }
+      
+      if (group && group.adminId) {
+        headers["X-Admin-ID"] = group.adminId;
+      }
+      
+      console.log(`Rejecting request ${selectedRequestId} for group ${groupId}`);
+      
       const response = await fetch(`${API_URL}/api/groups/${groupId}/reject-request/${selectedRequestId}`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ reason: rejectReason }),
-        credentials: "include"
+        credentials: "include",
+        body: JSON.stringify({ 
+          reason: rejectReason,
+          adminId: group?.adminId,
+          userId: localStorage.getItem('userId')
+        })
       });
       
+      const responseText = await response.text();
+      console.log("Reject response:", response.status, responseText);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reject request");
+        throw new Error(`Failed to reject request: ${responseText}`);
       }
       
       // Remove the rejected request from the list
@@ -146,12 +220,22 @@ const ManageJoinRequests = () => {
       console.error("❌ Error rejecting request:", err);
       setError(err.message);
       closeRejectModal();
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => setError(null), 3000);
     }
   };
   
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    if (!dateString) return "Unknown date";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return dateString;
+    }
   };
   
   if (isLoading) {
@@ -171,10 +255,10 @@ const ManageJoinRequests = () => {
             <div className="flex items-center">
               <span className="text-white text-xl font-bold">Boiler Resources</span>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate(`/groups/${groupId}`)}
-                className="text-white hover:text-gray-300 mr-4"
+                className="text-white hover:text-gray-300"
               >
                 Back to Group
               </button>
@@ -190,8 +274,24 @@ const ManageJoinRequests = () => {
             Manage Join Requests
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {group?.name}
+            {group?.name || "Loading group details..."}
           </p>
+          
+          {/* Debug Info (only visible during development) */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-900 text-xs font-mono overflow-auto rounded">
+              <details>
+                <summary className="cursor-pointer font-bold">Debug Info (click to expand)</summary>
+                <div className="mt-2">
+                  <p>Group ID: {groupId}</p>
+                  <p>User ID: {localStorage.getItem('userId')}</p>
+                  <p>Admin ID: {group?.adminId}</p>
+                  <p>Is admin: {group?.adminId === localStorage.getItem('userId') ? 'Yes' : 'No'}</p>
+                  <p>Join requests count: {joinRequests?.length || 0}</p>
+                </div>
+              </details>
+            </div>
+          )}
           
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -208,53 +308,44 @@ const ManageJoinRequests = () => {
           {joinRequests.length === 0 ? (
             <div className="text-center py-8 border rounded-lg">
               <p className="text-gray-600 dark:text-gray-400">No pending join requests.</p>
+              {group && !group.isPrivate && (
+                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                  This group is public, so users can join directly without approval.
+                </p>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white dark:bg-gray-800">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-left">
-                    <th className="py-3 px-4 font-semibold">User</th>
-                    <th className="py-3 px-4 font-semibold">Requested At</th>
-                    <th className="py-3 px-4 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {joinRequests.map(request => (
-                    <tr key={request._id} className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="py-3 px-4">
-                        {request.user ? (
-                          <div>
-                            <div className="font-medium">{request.user.username}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">{request.user.email}</div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500 italic">Unknown User</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {formatDate(request.requestedAt)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleApproveRequest(request._id)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openRejectModal(request._id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {joinRequests.map((request) => (
+                <div key={request._id || `req-${Date.now()}-${Math.random()}`} className="flex items-center justify-between p-4 border rounded bg-gray-50 dark:bg-gray-700">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {request.user 
+                        ? (request.user.username || request.user.email || 'Unknown User')
+                        : (request.userId && typeof request.userId === 'object')
+                          ? (request.userId.username || request.userId.email || 'Unknown User') 
+                          : 'Unknown User'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Requested: {formatDate(request.requestedAt)}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleApproveRequest(request._id)}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => openRejectModal(request._id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
