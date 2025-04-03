@@ -13,7 +13,8 @@ import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/classRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import calendarRoutes from "./routes/calendar.js"; // ✅ Added
-import { router as messageRoutes } from "./routes/messages.js";
+import messageRoutes from "./routes/messages.js"; // ✅ Added
+//import { router as messageRoutes } from "./routes/messages.js";
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
 
