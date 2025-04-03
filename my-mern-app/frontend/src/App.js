@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from './context/ThemeContext';
+
 import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
@@ -11,21 +12,21 @@ import Home from "./components/Home";
 import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
-import ClassDetails from "./components/classDetails"; // ✅ Ensure it's correctly imported
+import ClassDetails from "./components/classDetails";
+import Chat from "./components/Chat";
+import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
-  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-    
+
     if (token) {
       localStorage.setItem("token", token);
-      navigate("/home"); // ✅ Redirect to home after login
+      navigate("/home");
     }
   }, [navigate]);
-  
   return <div>Redirecting...</div>;
 };
 
@@ -44,8 +45,12 @@ function App() {
           <Route path="/add-class" element={<AddClass />} />
           <Route path="/delete-class" element={<DeleteClass />} />
           <Route path="/delete-completed-class" element={<DeleteCompletedClass />} />
-          <Route path="/class/:id" element={<ClassDetails />} /> {/* ✅ Fixed Route */}
-          <Route path="/oauth-callback" element={<OAuthHandler />} /> {/* ✅ OAuth handler properly captures tokens */}
+          <Route path="/class/:id" element={<ClassDetails />} />
+          <Route path="/oauth-callback" element={<OAuthHandler />} />
+
+          {/* ✅ Chat + Calendar Routes */}
+          <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
+          <Route path="/calendar" element={<ScheduleCalendar />} /> {/* ✅ New route */}
         </Routes>
       </Router>
     </ThemeProvider>
