@@ -221,33 +221,50 @@ router.post("/", isAuthenticated, async (req, res) => {
 router.get("/user/:userId", isAuthenticated, async (req, res) => {
   try {
     const { userId } = req.params;
-
-    console.log(`Fetching study groups for user: ${userId}`);
-
+    const userIdHeader = req.headers['x-user-id'];
+    
+    // Use header userId if available, fallback to param
+    const effectiveUserId = userIdHeader || userId;
+    
+    console.log(`Fetching study groups for user: ${effectiveUserId}`);
+    
     // Validate user ID
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.log("Invalid userId format:", userId);
+    if (!mongoose.Types.ObjectId.isValid(effectiveUserId)) {
+      console.log("Invalid userId format:", effectiveUserId);
       return res.status(400).json({ message: "Invalid user ID" });
     }
-
-    // Find all groups where user is a member or admin
+    
+    // Find all groups where user is a member or admin - using multiple query approaches for safety
     const groups = await Group.find({
-      $or: [{ members: userId }, { adminId: userId }],
+      $or: [
+        { members: effectiveUserId },
+        { adminId: effectiveUserId },
+        { "members": { $in: [effectiveUserId] } },
+        { "members": { $in: [mongoose.Types.ObjectId(effectiveUserId)] } }
+      ]
     });
-
-    console.log(`Found ${groups.length} groups for user ${userId}`);
-
+    
+    console.log(`Found ${groups.length} groups for user ${effectiveUserId}`);
+    
+    // Debug logs to see group membership details
+    groups.forEach(group => {
+      console.log(`Group ${group._id} - ${group.name}:`);
+      console.log(`  Admin: ${group.adminId}`);
+      console.log(`  Members: ${JSON.stringify(group.members)}`);
+      console.log(`  Is user in members array? ${group.members.some(m => m.toString() === effectiveUserId.toString())}`);
+    });
+    
     // Manually fetch class data for each group
     const populatedGroups = await Promise.all(
       groups.map(async (group) => {
         try {
           // Convert group to plain object
           const groupObj = group.toObject();
-
+          
           console.log(
             `Processing group ${groupObj._id} with classId ${groupObj.classId}`
           );
-
+          
           // Fetch class details if classId exists
           if (groupObj.classId) {
             try {
@@ -269,10 +286,10 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
                   return groupObj;
                 }
               }
-
+              
               // Now try to find the class
               const classDetails = await ClassModel.findById(groupObj.classId);
-
+              
               if (classDetails) {
                 console.log(
                   `Found class details for ${groupObj.classId}:`,
@@ -303,10 +320,14 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
               };
             }
           }
-
+          
           // Count members with fallback
           groupObj.memberCount = groupObj.members ? groupObj.members.length : 0;
-
+          
+          // Add user-specific flags
+          groupObj.isAdmin = group.adminId.toString() === effectiveUserId.toString();
+          groupObj.isMember = group.members.some(m => m.toString() === effectiveUserId.toString());
+          
           return groupObj;
         } catch (error) {
           console.error(`Error populating group ${group._id}:`, error);
@@ -323,7 +344,7 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
         }
       })
     );
-
+    
     console.log(`Returning ${populatedGroups.length} populated groups`);
     res.json(populatedGroups);
   } catch (error) {
@@ -642,9 +663,22 @@ router.post("/:id/join", isAuthenticated, async (req, res) => {
     }
     
     // For public groups, add user directly to members
-    group.members.push(userId);
+    console.log("Before adding member, current members:", group.members.map(m => m.toString()));
+    
+    // Try to convert to ObjectId if it's not already one
+    let userObjectId;
+    try {
+      userObjectId = mongoose.Types.ObjectId(userId);
+    } catch (e) {
+      console.error("Error converting userId to ObjectId:", e);
+      userObjectId = userId; // Fallback to using as is
+    }
+    
+    // Add the user to members
+    group.members.push(userObjectId);
+    
     await group.save();
-    console.log(`User ${userId} added to group ${id} members`);
+    console.log("After adding member, current members:", group.members.map(m => m.toString()));
     
     res.json({
       message: "You've joined the group successfully",

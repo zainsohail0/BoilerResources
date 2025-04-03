@@ -37,6 +37,24 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    if (location.state?.refreshGroups) {
+      console.log("Refresh groups trigger detected:", location.state);
+      // You could also force a refetch here if needed
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    console.log("Current localStorage contents:");
+    console.log("userId:", localStorage.getItem('userId'));
+    console.log("token:", localStorage.getItem('token') ? "Present" : "Missing");
+    // Check all localStorage items
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      console.log(`${key}:`, localStorage.getItem(key));
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
       try {
@@ -139,22 +157,23 @@ const Home = () => {
       // Add cache-busting query parameter
       const timestamp = new Date().getTime();
       const headers = {
+        "Content-Type": "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-        "X-User-ID": userId, // Add this line
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "X-User-ID": userId
       };
-
+  
       const res = await fetch(
         `${API_URL}/api/groups/user/${userId}?t=${timestamp}`,
         {
           credentials: "include",
-          headers,
+          headers
         }
       );
-
+  
       console.log("Study groups response status:", res.status);
-
+  
       if (!res.ok) {
         console.error(
           "Failed to fetch study groups:",
@@ -163,15 +182,18 @@ const Home = () => {
         );
         const errorText = await res.text();
         console.error("Error response:", errorText);
-
+  
         // Use fallback from localStorage if API fails
         tryFallbackGroups(userId, highlightGroupId);
         return;
       }
-
+  
       const data = await res.json();
       console.log("Study groups fetched:", data);
-
+      
+      // Store in localStorage as backup for future fallbacks
+      localStorage.setItem('lastFetchedGroups', JSON.stringify(data));
+  
       if (Array.isArray(data) && data.length > 0) {
         // Ensure we have class details for each group
         const groupsWithClasses = data.map((group) => {
@@ -191,9 +213,10 @@ const Home = () => {
           }
           return group;
         });
-
+  
+        console.log("Setting study groups with class details:", groupsWithClasses);
         setStudyGroups(groupsWithClasses);
-
+  
         // If we have a new group ID to highlight, make sure it's in the list
         if (highlightGroupId && !data.some((g) => g._id === highlightGroupId)) {
           console.log(
@@ -203,6 +226,23 @@ const Home = () => {
         }
       } else {
         console.log("No study groups returned from API, trying fallback...");
+        
+        // First check if we had previously fetched groups
+        const lastFetched = localStorage.getItem('lastFetchedGroups');
+        if (lastFetched) {
+          try {
+            const parsedGroups = JSON.parse(lastFetched);
+            if (Array.isArray(parsedGroups) && parsedGroups.length > 0) {
+              console.log("Using previously fetched groups from localStorage");
+              setStudyGroups(parsedGroups);
+              return;
+            }
+          } catch (e) {
+            console.error("Error parsing lastFetchedGroups:", e);
+          }
+        }
+        
+        // If no previous fetch, try the standard fallback
         tryFallbackGroups(userId, highlightGroupId);
       }
     } catch (err) {
@@ -565,6 +605,19 @@ const Home = () => {
               >
                 Refresh Groups
               </button>
+
+              {/* Add Clear Storage button here */}
+      <button
+        onClick={() => {
+          localStorage.clear();
+          sessionStorage.clear();
+          console.log("Storage cleared");
+          window.location.reload();
+        }}
+        className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition"
+      >
+        Clear Storage
+      </button>
             </div>
           </div>
 

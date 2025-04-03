@@ -180,7 +180,14 @@ const ClassStudyGroups = () => {
       
       // Navigate back to home after a delay
       setTimeout(() => {
-        navigate('/home', { state: { refreshGroups: true } });
+        // Include refreshGroups and timestamp to force refresh
+        navigate('/home', { 
+          state: { 
+            refreshGroups: true,
+            timestamp: new Date().getTime() 
+          },
+          replace: true
+        });
       }, 2000);
       
     } catch (err) {
