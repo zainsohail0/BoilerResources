@@ -354,10 +354,13 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
 });
 
 // Get a specific study group with detailed error handling
+// Replace the existing main GET /:id route with this:
 router.get("/:id", isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`Fetching details for group ${id}`);
+    const userId = req.user._id;
+    
+    console.log(`Fetching details for group ${id} for user ${userId}`);
 
     // Validate group ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -387,19 +390,44 @@ router.get("/:id", isAuthenticated, async (req, res) => {
             ClassModel = mongoose.model("Class");
           } catch (err2) {
             console.log("Neither 'Course' nor 'Class' models found");
-            res.json(groupObj);
-            return;
           }
         }
 
-        const classDetails = await ClassModel.findById(groupObj.classId);
-        if (classDetails) {
-          groupObj.class = classDetails;
+        if (ClassModel) {
+          const classDetails = await ClassModel.findById(groupObj.classId);
+          if (classDetails) {
+            groupObj.class = classDetails;
+          }
         }
       } catch (classError) {
         console.error(`Error fetching class ${groupObj.classId}:`, classError);
       }
     }
+
+    // Determine user status 
+    const isAdmin = group.adminId.toString() === userId.toString();
+    console.log(`Admin check: User ID ${userId}, Group admin ${group.adminId}, Result: ${isAdmin}`);
+    
+    // Check if user is a member using string comparison
+    const isMember = group.members.some(
+      (memberId) => memberId.toString() === userId.toString()
+    );
+    
+    // Check for pending request using string comparison
+    const hasPendingRequest = group.joinRequests && group.joinRequests.some(
+      (req) => req.userId && req.userId.toString() === userId.toString()
+    );
+    
+    // Log the results for debugging
+    console.log(`User status for ${userId} in group ${id}:`);
+    console.log(`- Admin: ${isAdmin}`);
+    console.log(`- Member: ${isMember}`);
+    console.log(`- Pending Request: ${hasPendingRequest}`);
+    
+    // Add user-specific status flags
+    groupObj.isAdmin = isAdmin;
+    groupObj.isMember = isMember;
+    groupObj.hasPendingRequest = hasPendingRequest;
 
     res.json(groupObj);
   } catch (error) {
@@ -1000,6 +1028,7 @@ router.get("/:id/user-status", isAuthenticated, async (req, res) => {
   }
 });
 
+// Replace the existing GET /class/:classId route with this:
 router.get("/class/:classId", isAuthenticated, async (req, res) => {
   try {
     const { classId } = req.params;
@@ -1014,17 +1043,9 @@ router.get("/class/:classId", isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: "Invalid class ID format" });
     }
     
-    // Find all groups for this class
-    // For public groups, return all of them
-    // For private groups, only return those where user is a member or admin
-    const groups = await Group.find({
-      classId,
-      $or: [
-        { isPrivate: false },
-        { members: userId },
-        { adminId: userId }
-      ]
-    });
+    // Find ALL groups for this class (both public and private)
+    // We'll show private groups with a "Request to Join" button
+    const groups = await Group.find({ classId });
     
     console.log(`Found ${groups.length} groups for class ${classId}`);
     
@@ -1045,11 +1066,17 @@ router.get("/class/:classId", isAuthenticated, async (req, res) => {
         req => req.userId && req.userId.toString() === userId.toString()
       );
       
+      // Add visible flag - determines if group should be shown in UI
+      // Show if: public OR user is member/admin OR user has pending request
+      const isVisible = !group.isPrivate || isMember || isAdmin || hasPendingRequest;
+      
+      // Always include the group but mark it as visible or not
       return {
         ...plainGroup,
         isAdmin,
         isMember,
         hasPendingRequest,
+        isVisible,
         memberCount: group.members.length
       };
     });
