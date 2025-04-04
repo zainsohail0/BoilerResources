@@ -125,52 +125,57 @@ export const uploadResource = async (req, res) => {
   try {
     console.log("\n=== UPLOAD RESOURCE ===");
 
-    // Get courseId from URL params and convert to ObjectId immediately
-    const courseId = req.params.courseId;
-    console.log("Raw courseId from params:", courseId);
+    // Check if file was uploaded
+    if (!req.file) {
+      console.log("No file uploaded");
+      return res.status(400).json({
+        message: "No file uploaded",
+        success: false,
+      });
+    }
 
+    // Get courseId from URL params
+    const courseId = req.params.courseId;
     if (!courseId) {
-      console.log("No courseId provided in URL params");
-      return res.status(400).json({ message: "Course ID is required" });
+      console.log("No courseId provided");
+      return res.status(400).json({
+        message: "Course ID is required",
+        success: false,
+      });
     }
 
     // Validate courseId format
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
       console.log("Invalid courseId format:", courseId);
-      return res.status(400).json({ message: "Invalid course ID format" });
+      return res.status(400).json({
+        message: "Invalid course ID format",
+        success: false,
+      });
     }
 
-    // Convert courseId to ObjectId
-    const courseObjectId = new mongoose.Types.ObjectId(courseId);
-    console.log("Converted courseId to ObjectId:", courseObjectId);
-
-    // First, verify the course exists
-    const course = await Course.findById(courseObjectId);
+    // Verify course exists
+    const course = await Course.findById(courseId);
     if (!course) {
       console.log("Course not found:", courseId);
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json({
+        message: "Course not found",
+        success: false,
+      });
     }
 
-    console.log("Found course:", {
-      _id: course._id,
-      title: course.title,
-      courseId: course._id.toString(),
-    });
-
-    if (!req.file) {
-      console.log("No file provided");
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
+    // Get user ID from request
     if (!req.user?._id) {
       console.log("No user found in request");
-      return res.status(401).json({ message: "User not authenticated" });
+      return res.status(401).json({
+        message: "User not authenticated",
+        success: false,
+      });
     }
 
     const { title, description } = req.body;
     const fileType = "." + req.file.originalname.split(".").pop().toLowerCase();
 
-    // Determine the resource type based on the file type
+    // Determine resource type based on file type
     let resourceType = "other";
     if ([".jpg", ".png", ".gif"].includes(fileType)) {
       resourceType = "document";
@@ -182,91 +187,51 @@ export const uploadResource = async (req, res) => {
       resourceType = "document";
     }
 
-    // Create the resource data object with explicit courseId
-    const resourceData = {
+    // Create resource with Cloudinary URL
+    const resource = new Resource({
       title,
       description,
       type: resourceType,
-      url: req.file.path,
+      url: req.file.path, // Use Cloudinary URL
       fileType,
-      courseId: courseObjectId, // Set the courseId as ObjectId
+      courseId: course._id, // Use course's _id
       postedBy: req.user._id,
-    };
-
-    // Log the resource data before saving
-    console.log("Creating resource with data:", {
-      ...resourceData,
-      courseId: resourceData.courseId.toString(),
-      postedBy: resourceData.postedBy.toString(),
+      datePosted: new Date(),
+      upvotes: 0,
+      downvotes: 0,
+      comments: [],
     });
 
-    // Create and save the resource in one step
-    const savedResource = await Resource.create(resourceData);
-
+    // Save resource
+    const savedResource = await resource.save();
     if (!savedResource) {
-      console.log("Failed to save resource");
-      throw new Error("Resource failed to save");
+      throw new Error("Failed to save resource");
     }
 
-    // Verify the saved resource has the correct courseId
-    console.log("Saved resource verification:", {
-      _id: savedResource._id,
-      title: savedResource.title,
-      courseId: savedResource.courseId?.toString(),
-      expectedCourseId: courseObjectId.toString(),
-    });
-
-    // Double check by fetching the resource from the database
-    const verificationResource = await Resource.findById(
-      savedResource._id
-    ).select("_id courseId");
-    console.log("Database verification:", {
-      _id: verificationResource._id,
-      courseId: verificationResource.courseId?.toString(),
-      expectedCourseId: courseObjectId.toString(),
-    });
-
-    // Update the course's resources array
-    const updatedCourse = await Course.findByIdAndUpdate(
-      courseObjectId,
-      {
-        $addToSet: { resources: savedResource._id },
-      },
+    // Update course's resources array - only store the resource ID
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $push: { resources: savedResource._id } },
       { new: true }
     );
 
-    console.log("Updated course resources:", {
-      courseId: updatedCourse._id.toString(),
-      resourceCount: updatedCourse.resources.length,
-      lastResource:
-        updatedCourse.resources[updatedCourse.resources.length - 1]?.toString(),
-    });
-
-    // Get the final resource with populated fields
+    // Get final resource with populated fields
     const finalResource = await Resource.findById(savedResource._id).populate(
       "postedBy",
       "username"
     );
 
-    if (!finalResource) {
-      throw new Error("Failed to retrieve saved resource");
-    }
-
-    // Final verification log
-    console.log("Final resource verification:", {
-      _id: finalResource._id,
-      title: finalResource.title,
-      courseId: finalResource.courseId?.toString(),
-      postedBy: finalResource.postedBy?.username,
+    res.status(201).json({
+      message: "Resource uploaded successfully",
+      success: true,
+      resource: finalResource,
     });
-
-    res.status(201).json(finalResource);
   } catch (error) {
-    console.error("Error in uploadResource:", {
+    console.error("Error in uploadResource:", error);
+    res.status(500).json({
       message: error.message,
-      stack: error.stack,
+      success: false,
     });
-    res.status(500).json({ message: error.message });
   }
 };
 
@@ -368,6 +333,86 @@ export const addComment = async (req, res) => {
     await resource.addComment(comment);
     res.status(201).json(comment);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Test function to create a hard-coded resource
+export const createTestResource = async (req, res) => {
+  try {
+    console.log("\n=== CREATING TEST RESOURCE ===");
+
+    // Validate courseId
+    const courseId = req.params.courseId;
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      console.log("Invalid courseId:", courseId);
+      return res.status(400).json({ message: "Invalid course ID" });
+    }
+
+    // Verify course exists
+    const course = await Course.findById(courseId);
+    if (!course) {
+      console.log("Course not found:", courseId);
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    console.log("Found course:", {
+      _id: course._id,
+      title: course.title,
+    });
+
+    // Create test resource
+    const testResource = new Resource({
+      title: "Test Resource",
+      description: "This is a test resource",
+      type: "document",
+      url: "https://example.com/test.pdf",
+      fileType: ".pdf",
+      courseId: course._id, // Use the course's _id
+      postedBy: req.user._id,
+      datePosted: new Date(),
+      upvotes: 0,
+      downvotes: 0,
+      comments: [],
+    });
+
+    // Log before saving
+    console.log("Test resource before save:", {
+      title: testResource.title,
+      courseId: testResource.courseId.toString(),
+      postedBy: testResource.postedBy.toString(),
+    });
+
+    // Save to MongoDB
+    const savedResource = await testResource.save();
+
+    if (!savedResource) {
+      throw new Error("Failed to save test resource");
+    }
+
+    // Verify the save
+    console.log("Test resource saved:", {
+      _id: savedResource._id,
+      title: savedResource.title,
+      courseId: savedResource.courseId.toString(),
+    });
+
+    // Add to course's resources array
+    course.resources.push(savedResource._id);
+    await course.save();
+
+    // Verify course update
+    const updatedCourse = await Course.findById(courseId);
+    console.log("Course resources after update:", {
+      courseId: updatedCourse._id,
+      resourceCount: updatedCourse.resources.length,
+      lastResource:
+        updatedCourse.resources[updatedCourse.resources.length - 1]?.toString(),
+    });
+
+    res.status(201).json(savedResource);
+  } catch (error) {
+    console.error("Error creating test resource:", error);
     res.status(500).json({ message: error.message });
   }
 };

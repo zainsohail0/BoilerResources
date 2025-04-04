@@ -21,6 +21,7 @@ import ClassDetails from "./components/classDetails";
 import Chat from "./components/Chat";
 import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
 import CourseResources from "./components/CourseResources";
+import Bookmarks from "./components/Bookmarks";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ function App() {
             path="/course/:courseId/resources"
             element={<CourseResources />}
           />
+          <Route path="/bookmarks" element={<Bookmarks />} />
         </Routes>
       </Router>
     </ThemeProvider>
