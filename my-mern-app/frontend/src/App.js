@@ -1,12 +1,8 @@
 import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useNavigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
-import ProfileUI from "./components/ProfileUI";
+
+import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ForgotPassword from "./components/ForgotPassword";
@@ -17,15 +13,20 @@ import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
 import ClassDetails from "./components/classDetails";
+
+// Study Group Components
 import CreateStudyGroup from "./components/CreateStudyGroup";
 import StudyGroupDetails from "./components/StudyGroupDetails";
 import ManageStudyGroup from "./components/ManageStudyGroup";
-
-// New Study Group Components
 import ClassStudyGroups from "./components/ClassStudyGroups";
 import GroupDetails from "./components/GroupDetails";
 import ManageJoinRequests from "./components/ManageJoinRequests";
 import PendingJoinRequests from "./components/PendingJoinRequests";
+
+// Calendar and Chat Components
+import Chat from "./components/Chat";
+import ScheduleCalendar from "./components/setCalendar";
+import FeedbackForm from "./components/FeedbackForm";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const OAuthHandler = () => {
 
     if (token) {
       localStorage.setItem("token", token);
-      navigate("/home"); // ✅ Redirect to home after login
+      navigate("/home");
     }
   }, [navigate]);
 
@@ -66,15 +67,13 @@ function App() {
           />
           <Route path="/class/:id" element={<ClassDetails />} />
 
-          {/* Existing Study Group Routes */}
+          {/* Study Group Routes */}
           <Route path="/create-study-group" element={<CreateStudyGroup />} />
           <Route path="/study-group/:id" element={<StudyGroupDetails />} />
           <Route
             path="/manage-study-group/:id"
             element={<ManageStudyGroup />}
           />
-
-          {/* New Study Group Routes */}
           <Route path="/class/:classId/groups" element={<ClassStudyGroups />} />
           <Route path="/groups/:groupId" element={<GroupDetails />} />
           <Route
@@ -83,6 +82,12 @@ function App() {
           />
           <Route path="/pending-requests" element={<PendingJoinRequests />} />
 
+          {/* Chat, Calendar, and Feedback Routes */}
+          <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
+          <Route path="/calendar" element={<ScheduleCalendar />} />
+          <Route path="/feedback" element={<FeedbackForm />} />
+          
+          {/* OAuth Handler */}
           <Route path="/oauth-callback" element={<OAuthHandler />} />
         </Routes>
       </Router>

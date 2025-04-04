@@ -8,6 +8,7 @@ const PendingJoinRequests = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -15,28 +16,23 @@ const PendingJoinRequests = () => {
       setError(null);
       
       try {
-        // Get user ID from localStorage to help with debugging
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-          console.warn("No userId found in localStorage");
-        } else {
-          console.log("Fetching pending requests for user:", userId);
+        // First get current user details
+        const userResponse = await fetch(`${API_URL}/api/auth/me`, {
+          credentials: "include",
+        });
+        
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user details. Please log in again.");
         }
         
-        // Get token from localStorage
-        const token = localStorage.getItem('token');
-        const headers = {
-          "Content-Type": "application/json"
-        };
+        const userData = await userResponse.json();
+        const userId = userData._id;
+        setCurrentUserId(userId);
         
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+        console.log("Fetching pending requests for user:", userId);
         
         // Fetch user's pending join requests
-        console.log("Fetching from:", `${API_URL}/api/groups/pending-requests`);
-        const response = await fetch(`${API_URL}/api/groups/pending-requests`, {
-          headers,
+        const response = await fetch(`${API_URL}/api/groups/user/${userId}/pending-requests`, {
           credentials: "include"
         });
         
@@ -47,12 +43,10 @@ const PendingJoinRequests = () => {
           const errorText = await response.text();
           console.error("Error response:", errorText);
           
-          // Check for common errors
           if (response.status === 401) {
             throw new Error("Authentication required. Please log in again.");
           } else if (response.status === 404) {
             // This is not truly an error - just means the endpoint isn't found
-            // We'll show a message but not an error
             console.log("Pending requests endpoint not found - may not be implemented yet");
             setPendingRequests([]);
             setIsLoading(false);
@@ -94,7 +88,6 @@ const PendingJoinRequests = () => {
               // Only fetch class details if we have a classId
               if (request.classId) {
                 const classRes = await fetch(`${API_URL}/api/courses/${request.classId}`, {
-                  headers,
                   credentials: "include"
                 });
                 
@@ -217,6 +210,19 @@ const PendingJoinRequests = () => {
   function renderContent() {
     return (
       <>
+        {/* Debug Info (only visible during development) */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-900 text-xs font-mono overflow-auto rounded">
+            <details>
+              <summary className="cursor-pointer font-bold">Debug Info (click to expand)</summary>
+              <div className="mt-2">
+                <p>Current User ID: {currentUserId}</p>
+                <p>Pending requests count: {pendingRequests.length}</p>
+              </div>
+            </details>
+          </div>
+        )}
+        
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <strong>Error:</strong> {error}
@@ -235,7 +241,7 @@ const PendingJoinRequests = () => {
           <div className="space-y-4">
             {pendingRequests.map(request => (
               <div 
-                key={`${request.groupId || request._id}-${Date.now()}`} 
+                key={request._id || `${request.groupId}-${Date.now()}`} 
                 className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
               >
                 <div className="flex justify-between items-start">
@@ -248,7 +254,7 @@ const PendingJoinRequests = () => {
                   </div>
                   <div>
                     <button
-                      onClick={() => handleViewGroup(request.groupId || request._id)}
+                      onClick={() => handleViewGroup(request.groupId)}
                       className="text-yellow-700 dark:text-yellow-500 hover:underline text-sm"
                     >
                       View Group

@@ -240,7 +240,7 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
         { members: effectiveUserId },
         { adminId: effectiveUserId },
         { "members": { $in: [effectiveUserId] } },
-        { "members": { $in: [mongoose.Types.ObjectId(effectiveUserId)] } }
+        { "members": { $in: [new mongoose.Types.ObjectId(effectiveUserId)] } } // Added 'new' keyword here
       ]
     });
     
@@ -810,61 +810,6 @@ router.post(
       await group.save();
       console.log(`Join request ${requestId} approved successfully`);
 
-      res.json({ message: "Join request approved successfully" });
-    } catch (error) {
-      console.error("❌ Error approving join request:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
-);
-
-// Reject a join request
-router.post(
-  "/:id/reject-request/:requestId",
-  isAuthenticated,
-  async (req, res) => {
-    try {
-      const { id, requestId } = req.params;
-      const userId = req.user._id;
-
-      console.log(`Rejecting join request ${requestId} for group ${id}`);
-
-      // Validate IDs
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        console.log("Invalid group ID format:", id);
-        return res.status(400).json({ message: "Invalid group ID" });
-      }
-
-      // Find the group
-      const group = await Group.findById(id);
-
-      if (!group) {
-        console.log(`Group ${id} not found`);
-        return res.status(404).json({ message: "Study group not found" });
-      }
-
-      // Check if user is admin
-      if (group.adminId.toString() !== userId.toString()) {
-        console.log(`User ${userId} is not admin of group ${id}`);
-        return res
-          .status(403)
-          .json({ message: "Not authorized to reject requests" });
-      }
-
-      // Find and remove the request
-      const requestIndex = group.joinRequests.findIndex(
-        (req) => req._id.toString() === requestId
-      );
-
-      if (requestIndex === -1) {
-        console.log(`Join request ${requestId} not found in group ${id}`);
-        return res.status(404).json({ message: "Join request not found" });
-      }
-
-      group.joinRequests.splice(requestIndex, 1);
-      await group.save();
-      console.log(`Join request ${requestId} rejected successfully`);
-
       res.json({ message: "Join request rejected successfully" });
     } catch (error) {
       console.error("❌ Error rejecting join request:", error);
@@ -1141,6 +1086,89 @@ router.get("/pending-requests", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("❌ Error fetching pending requests:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Basic group creation endpoint from the calendar-export branch
+// Keeping this for backward compatibility
+router.post("/create", async (req, res) => {
+  try {
+    const { name, members } = req.body;
+
+    if (!name || !members || !Array.isArray(members)) {
+      return res.status(400).json({ message: "Group name and members array are required" });
+    }
+
+    const memberObjectIds = members.map((id) => new mongoose.Types.ObjectId(id));
+
+    const newGroup = new Group({
+      name,
+      members: memberObjectIds,
+    });
+
+    await newGroup.save();
+    res.status(201).json(newGroup);
+  } catch (error) {
+    console.error("❌ Error creating group:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Basic get all groups endpoint from the calendar-export branch
+router.get("/", async (req, res) => {
+  try {
+    const groups = await Group.find().populate("members", "username email");
+    res.status(200).json(groups);
+  } catch (error) {
+    console.error("❌ Error fetching groups:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Basic get group by ID endpoint from the calendar-export branch
+router.get("/:groupId", async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const group = await Group.findById(groupId).populate("members", "username email");
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    res.status(200).json(group);
+  } catch (error) {
+    console.error("❌ Error fetching group:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Basic join group endpoint from the calendar-export branch
+router.post("/:groupId/join", async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { userId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid groupId or userId" });
+    }
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    if (!group.members.includes(userId)) {
+      group.members.push(userId);
+      await group.save();
+    }
+
+    res.status(200).json({ message: "User added to group", group });
+  } catch (error) {
+    console.error("❌ Error joining group:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

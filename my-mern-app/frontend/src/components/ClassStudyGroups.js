@@ -20,29 +20,26 @@ const ClassStudyGroups = () => {
         setLoading(true);
         setError(null);
         
-        // Get auth token and user ID
-        const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
-        setCurrentUserId(userId);
+        // First fetch user data directly from the API
+        const userRes = await fetch(`${API_URL}/api/auth/me`, {
+          credentials: "include"
+        });
         
-        if (!userId) {
-          setError("You must be logged in to view study groups");
-          setLoading(false);
-          return;
+        if (!userRes.ok) {
+          throw new Error("You must be logged in to view study groups");
         }
+        
+        const userData = await userRes.json();
+        const userId = userData._id;
+        
+        setCurrentUserId(userId);
+        localStorage.setItem('userId', userId); // Update local storage
         
         // Set headers for requests
         const headers = {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-User-ID": userId
         };
-        
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
-        if (userId) {
-          headers["X-User-ID"] = userId; 
-        }
         
         // Fetch class details
         const classRes = await fetch(`${API_URL}/api/courses/${classId}`, {
@@ -68,6 +65,7 @@ const ClassStudyGroups = () => {
         }
         
         const groupsData = await groupsRes.json();
+        console.log("Study groups data:", groupsData);
         setStudyGroups(groupsData);
         
         // For each group, fetch user status
@@ -120,9 +118,8 @@ const ClassStudyGroups = () => {
     try {
       setError(null);
       
-      // Get auth token and user ID
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
+      // Get user ID directly from state
+      const userId = currentUserId;
       
       if (!userId) {
         setError("You must be logged in to join a group");
@@ -135,20 +132,17 @@ const ClassStudyGroups = () => {
         "X-User-ID": userId
       };
       
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      
       // Call the endpoint based on whether the group is private or public
       const endpoint = isPrivate ? 
         `${API_URL}/api/groups/${groupId}/join-request` : 
         `${API_URL}/api/groups/${groupId}/join`;
       
-        const response = await fetch(`${API_URL}/api/groups/${groupId}/join`, {
-          method: "POST",
-          headers,
-          credentials: "include"
-        });
+      // Use the correct endpoint
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        credentials: "include"
+      });
       
       let result;
       

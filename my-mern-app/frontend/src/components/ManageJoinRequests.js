@@ -14,34 +14,29 @@ const ManageJoinRequests = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // First check for userId in localStorage
-        const userId = localStorage.getItem('userId');
-        console.log("Using user ID from localStorage:", userId);
+        // First get current user details
+        const userResponse = await fetch(`${API_URL}/api/auth/me`, {
+          credentials: "include",
+        });
         
-        // Get token
-        const token = localStorage.getItem('token');
-        const headers = {
-          "Content-Type": "application/json"
-        };
-        
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch current user details");
         }
         
-        // Add explicit userId to request headers
-        if (userId) {
-          headers["X-User-ID"] = userId;
-        }
+        const userData = await userResponse.json();
+        const userId = userData._id;
+        setCurrentUserId(userId);
         
-        // Fetch group details first to check admin permissions
+        // Fetch group details
         console.log(`Fetching group ${groupId} details`);
         const groupRes = await fetch(`${API_URL}/api/groups/${groupId}`, {
-          headers,
           credentials: "include"
         });
         
@@ -55,20 +50,20 @@ const ManageJoinRequests = () => {
         console.log("Group data:", groupData);
         setGroup(groupData);
         
-        // Check if user is the admin
-        if (groupData.adminId !== userId) {
-          console.warn(`User ID ${userId} doesn't match admin ID ${groupData.adminId}`);
+        // Check if current user is the admin
+        const userIsAdmin = groupData.adminId === userId;
+        setIsAdmin(userIsAdmin);
+        
+        if (!userIsAdmin) {
+          setError("You don't have permission to manage join requests for this group");
+          setJoinRequests([]);
+          setIsLoading(false);
+          return;
         }
         
-        // Explicitly include admin ID in the URL for backend verification
-        console.log(`Fetching join requests for group ${groupId} (admin: ${groupData.adminId})`);
-        
-        // Try to fetch join requests with explicit admin ID
-        const requestsRes = await fetch(`${API_URL}/api/groups/${groupId}/join-requests?adminId=${groupData.adminId}`, {
-          headers: {
-            ...headers,
-            "X-Admin-ID": groupData.adminId  // Add admin ID to headers as well
-          },
+        // Fetch join requests
+        console.log(`Fetching join requests for group ${groupId}`);
+        const requestsRes = await fetch(`${API_URL}/api/groups/${groupId}/join-requests`, {
           credentials: "include"
         });
         
@@ -104,33 +99,16 @@ const ManageJoinRequests = () => {
   
   const handleApproveRequest = async (requestId) => {
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('token');
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      
-      if (userId) {
-        headers["X-User-ID"] = userId;
-      }
-      
-      if (group && group.adminId) {
-        headers["X-Admin-ID"] = group.adminId;
-      }
-      
       console.log(`Approving request ${requestId} for group ${groupId}`);
       
       const response = await fetch(`${API_URL}/api/groups/${groupId}/approve-request/${requestId}`, {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({ 
-          adminId: group?.adminId,
-          userId: localStorage.getItem('userId')
+          requestId: requestId
         })
       });
       
@@ -170,34 +148,17 @@ const ManageJoinRequests = () => {
   
   const handleRejectRequest = async () => {
     try {
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('token');
-      const headers = {
-        "Content-Type": "application/json"
-      };
-      
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      
-      if (userId) {
-        headers["X-User-ID"] = userId;
-      }
-      
-      if (group && group.adminId) {
-        headers["X-Admin-ID"] = group.adminId;
-      }
-      
       console.log(`Rejecting request ${selectedRequestId} for group ${groupId}`);
       
       const response = await fetch(`${API_URL}/api/groups/${groupId}/reject-request/${selectedRequestId}`, {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({ 
           reason: rejectReason,
-          adminId: group?.adminId,
-          userId: localStorage.getItem('userId')
+          requestId: selectedRequestId
         })
       });
       
@@ -246,6 +207,48 @@ const ManageJoinRequests = () => {
     );
   }
   
+  // If user is not the admin, show unauthorized message
+  if (!isAdmin && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
+        <nav className="bg-yellow-700 dark:bg-gray-800 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <span className="text-white text-xl font-bold">Boiler Resources</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => navigate(`/groups/${groupId}`)}
+                  className="text-white hover:text-gray-300"
+                >
+                  Back to Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+        
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+              Unauthorized
+            </h1>
+            <p className="text-red-600 dark:text-red-400 mb-6">
+              You don't have permission to manage join requests for this group. Only group admins can manage join requests.
+            </p>
+            <button
+              onClick={() => navigate(`/groups/${groupId}`)}
+              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+            >
+              Return to Group
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
       {/* Navigation Bar */}
@@ -284,9 +287,9 @@ const ManageJoinRequests = () => {
                 <summary className="cursor-pointer font-bold">Debug Info (click to expand)</summary>
                 <div className="mt-2">
                   <p>Group ID: {groupId}</p>
-                  <p>User ID: {localStorage.getItem('userId')}</p>
+                  <p>User ID: {currentUserId}</p>
                   <p>Admin ID: {group?.adminId}</p>
-                  <p>Is admin: {group?.adminId === localStorage.getItem('userId') ? 'Yes' : 'No'}</p>
+                  <p>Is admin: {isAdmin ? 'Yes' : 'No'}</p>
                   <p>Join requests count: {joinRequests?.length || 0}</p>
                 </div>
               </details>

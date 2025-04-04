@@ -242,8 +242,15 @@ const GroupDetails = () => {
   };
   
   const handleViewChat = () => {
+    // Get the current user ID to pass to the Chat component
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      setError("You must be logged in to view chat");
+      return;
+    }
+    
     // Navigate to the chat page for this group
-    navigate(`/group-chat/${groupId}`);
+    navigate(`/chat/${groupId}`);
   };
   
   if (isLoading) {

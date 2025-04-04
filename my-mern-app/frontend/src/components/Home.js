@@ -64,9 +64,7 @@ const Home = () => {
           credentials: "include",
         });
 
-        if (!res.ok) {
-          throw new Error("Authentication failed");
-        }
+        if (!res.ok) throw new Error("Authentication failed");
 
         const data = await res.json();
         console.log("User data fetched:", data);
@@ -320,14 +318,12 @@ const Home = () => {
 
   const handleLogout = async () => {
     try {
-      const logoutResponse = await fetch(`${API_URL}/api/auth/logout`, {
+      const res = await fetch(`${API_URL}/api/auth/logout`, {
         method: "GET",
         credentials: "include",
       });
 
-      if (!logoutResponse.ok) {
-        throw new Error("Logout failed");
-      }
+      if (!res.ok) throw new Error("Logout failed");
 
       setUser(null);
       localStorage.removeItem("token");
@@ -347,9 +343,11 @@ const Home = () => {
     navigate(`/class/${classId}/groups`);
   const handleViewPendingRequests = () => navigate("/pending-requests");
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+  const handleFeedbackForm = () => navigate('/feedback');
+
+  const handleGoToCalendar = () => navigate('/calendar');
 
   const handleMarkAsComplete = (classToComplete) => {
-    // Create a completed class object with consistent property names
     const completedClass = {
       _id: classToComplete._id,
       code: classToComplete.courseCode,
@@ -358,7 +356,6 @@ const Home = () => {
       completed: true,
     };
 
-    // Remove from enrolled classes by calling the API
     if (user && user._id) {
       // This would normally make an API call to unenroll
       // For now, we'll just remove it locally
@@ -371,7 +368,6 @@ const Home = () => {
       );
     }
 
-    // Add to completed classes in localStorage
     const updatedCompleted = [...completedClasses, completedClass];
     setCompletedClasses(updatedCompleted);
     localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
@@ -420,25 +416,24 @@ const Home = () => {
               {user ? (
                 <>
                   <span className="text-white">Welcome, {user.username}!</span>
+
+                  {/* ✅ Calendar Button */}
+                  <button
+                    onClick={handleGoToCalendar}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
+                  >
+                    View Calendar
+                  </button>
+
                   <ThemeToggle />
+
                   <div className="relative">
                     <button
                       onClick={toggleDropdown}
                       className="text-white bg-black dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                     >
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 6h16M4 12h16m-7 6h7"
-                        ></path>
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
                       </svg>
                     </button>
                     {dropdownOpen && (
@@ -448,6 +443,12 @@ const Home = () => {
                           className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                         >
                           View Profile
+                        </button>
+                        <button
+                          onClick={handleFeedbackForm}
+                          className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        >
+                          Feedback Form
                         </button>
                         <button
                           onClick={handleLogout}
@@ -469,6 +470,7 @@ const Home = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Welcome Block */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
             Welcome to Boiler Resources
@@ -479,7 +481,7 @@ const Home = () => {
           </p>
         </div>
 
-        {/* User's Current Classes Section */}
+        {/* Enrolled Classes Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -698,7 +700,7 @@ const Home = () => {
           </div>
 
           {completedClasses.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
               {completedClasses.map((classItem, index) => (
                 <div
                   key={classItem._id || index}
@@ -765,3 +767,4 @@ const Home = () => {
 };
 
 export default Home;
+
