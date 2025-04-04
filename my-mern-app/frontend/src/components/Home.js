@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
-const API_URL = "http://localhost:5001"; 
+const API_URL = "http://localhost:5001";
 const MIN_CREDIT_HOURS = 12;
 
 const Home = () => {
@@ -15,10 +15,11 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const handleGoToCalendar = () => navigate('/calendar');
+  const handleGoToCalendar = () => navigate("/calendar");
 
   useEffect(() => {
-    const completed = JSON.parse(localStorage.getItem('completedClasses')) || [];
+    const completed =
+      JSON.parse(localStorage.getItem("completedClasses")) || [];
     setCompletedClasses(completed);
   }, []);
 
@@ -49,9 +50,12 @@ const Home = () => {
 
   const fetchUserClasses = async (userId) => {
     try {
-      const res = await fetch(`${API_URL}/api/courses/user/${userId}/enrolled`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_URL}/api/courses/user/${userId}/enrolled`,
+        {
+          credentials: "include",
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to fetch enrolled classes");
 
@@ -81,10 +85,10 @@ const Home = () => {
     }
   };
 
-  const handleAddClass = () => navigate('/add-class');
-  const handleDeleteClass = () => navigate('/delete-class');
-  const handleDeleteCompletedClass = () => navigate('/delete-completed-class');
-  const handleViewProfile = () => navigate('/profile');
+  const handleAddClass = () => navigate("/add-class");
+  const handleDeleteClass = () => navigate("/delete-class");
+  const handleDeleteCompletedClass = () => navigate("/delete-completed-class");
+  const handleViewProfile = () => navigate("/profile");
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleMarkAsComplete = (classToComplete) => {
@@ -93,22 +97,26 @@ const Home = () => {
       code: classToComplete.courseCode,
       name: classToComplete.title,
       credits: classToComplete.creditHours,
-      completed: true
+      completed: true,
     };
 
     if (user && user._id) {
       const updated = userClasses.filter((c) => c._id !== classToComplete._id);
       setUserClasses(updated);
-      setTotalCredits(updated.reduce((sum, c) => sum + (c.creditHours || 0), 0));
+      setTotalCredits(
+        updated.reduce((sum, c) => sum + (c.creditHours || 0), 0)
+      );
     }
 
     const updatedCompleted = [...completedClasses, completedClass];
     setCompletedClasses(updatedCompleted);
-    localStorage.setItem('completedClasses', JSON.stringify(updatedCompleted));
+    localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
   };
 
   const handleRemoveCompletedClass = (classToRemove) => {
-    const updatedCompleted = completedClasses.filter((c) => c._id !== classToRemove._id);
+    const updatedCompleted = completedClasses.filter(
+      (c) => c._id !== classToRemove._id
+    );
     setCompletedClasses(updatedCompleted);
     localStorage.setItem("completedClasses", JSON.stringify(updatedCompleted));
   };
@@ -116,7 +124,9 @@ const Home = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Loading...</div>
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          Loading...
+        </div>
       </div>
     );
   }
@@ -128,7 +138,9 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">Boiler Resources</span>
+              <span className="text-white text-xl font-bold">
+                Boiler Resources
+              </span>
             </div>
             <div className="relative flex items-center gap-4">
               {user ? (
@@ -150,8 +162,18 @@ const Home = () => {
                       onClick={toggleDropdown}
                       className="text-white bg-black dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                     >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 6h16M4 12h16m-7 6h7"
+                        />
                       </svg>
                     </button>
                     {dropdownOpen && (
@@ -184,9 +206,12 @@ const Home = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Block */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to Boiler Resources</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            Welcome to Boiler Resources
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            This is your dashboard where you can access and manage your resources.
+            This is your dashboard where you can access and manage your
+            resources.
           </p>
         </div>
 
@@ -194,19 +219,29 @@ const Home = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{user?.username}'s Enrolled Classes</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {user?.username}'s Enrolled Classes
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Total Credits: {totalCredits} 
-                {totalCredits < MIN_CREDIT_HOURS && 
-                  <span className="text-red-500 dark:text-red-400 ml-2">(Minimum: {MIN_CREDIT_HOURS})</span>
-                }
+                Total Credits: {totalCredits}
+                {totalCredits < MIN_CREDIT_HOURS && (
+                  <span className="text-red-500 dark:text-red-400 ml-2">
+                    (Minimum: {MIN_CREDIT_HOURS})
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex gap-2">
-              <button onClick={handleAddClass} className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition">
+              <button
+                onClick={handleAddClass}
+                className="bg-yellow-700 dark:bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
+              >
                 Add Class
               </button>
-              <button onClick={handleDeleteClass} className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition">
+              <button
+                onClick={handleDeleteClass}
+                className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition"
+              >
                 Delete Class
               </button>
             </div>
@@ -221,15 +256,38 @@ const Home = () => {
           {userClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userClasses.map((classItem) => (
-                <div key={classItem._id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.courseCode}</h3>
-                  <p className="text-gray-800 dark:text-gray-200">{classItem.title}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.creditHours}</p>
+                <div
+                  key={classItem._id}
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {classItem.courseCode}
+                  </h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {classItem.title}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Credits: {classItem.creditHours}
+                  </p>
                   <div className="flex gap-2 mt-2">
-                    <button onClick={() => navigate(`/class/${classItem._id}`)} className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition">
+                    <button
+                      onClick={() => navigate(`/class/${classItem._id}`)}
+                      className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                    >
                       Details
                     </button>
-                    <button onClick={() => handleMarkAsComplete(classItem)} className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition">
+                    <button
+                      onClick={() =>
+                        navigate(`/course/${classItem._id}/resources`)
+                      }
+                      className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                    >
+                      View Resources
+                    </button>
+                    <button
+                      onClick={() => handleMarkAsComplete(classItem)}
+                      className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition"
+                    >
                       Mark as Complete
                     </button>
                   </div>
@@ -237,44 +295,75 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">You haven't added any classes yet. Click "Add Class" to get started.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              You haven't added any classes yet. Click "Add Class" to get
+              started.
+            </p>
           )}
         </div>
 
         {/* Completed Classes Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Completed Classes</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            Completed Classes
+          </h2>
           {completedClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
               {completedClasses.map((classItem, index) => (
-                <div key={classItem._id || index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{classItem.code}</h3>
-                  <p className="text-gray-800 dark:text-gray-200">{classItem.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Credits: {classItem.credits}</p>
-                  <button onClick={() => handleRemoveCompletedClass(classItem)} className="mt-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                <div
+                  key={classItem._id || index}
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                    {classItem.code}
+                  </h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {classItem.name}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Credits: {classItem.credits}
+                  </p>
+                  <button
+                    onClick={() => handleRemoveCompletedClass(classItem)}
+                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  >
                     Remove
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 mt-4">You don't have any completed classes yet.</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-4">
+              You don't have any completed classes yet.
+            </p>
           )}
         </div>
 
         {/* Resource Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">My Resources</h2>
-            <p className="text-gray-600 dark:text-gray-400">View and manage your saved resources</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              My Resources
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              View and manage your saved resources
+            </p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Browse Categories</h2>
-            <p className="text-gray-600 dark:text-gray-400">Explore resources by category</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              Browse Categories
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Explore resources by category
+            </p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Community</h2>
-            <p className="text-gray-600 dark:text-gray-400">Connect with other users</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              Community
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Connect with other users
+            </p>
           </div>
         </div>
       </div>

@@ -51,7 +51,7 @@ const SignupForm = () => {
     setIsSubmitting(true);
     setError("");
     setSuccess("");
-    
+
     // Validate inputs before proceeding
     if (!validateInputs()) {
       setIsSubmitting(false);
@@ -61,11 +61,14 @@ const SignupForm = () => {
     try {
       console.log("Attempting to signup with:", { email, username });
 
-      const response = await axios.post("http://localhost:5001/api/auth/signup", {
-        username,
-        email,
-        password
-      });
+      const response = await axios.post(
+        "http://localhost:5001/api/auth/signup",
+        {
+          username,
+          email,
+          password,
+        }
+      );
 
       console.log("Response status:", response.status);
       console.log("Response data:", response.data);
@@ -105,7 +108,11 @@ const SignupForm = () => {
       style={{ backgroundImage: "url('/images/background.jpg')" }}
     >
       <div
-        style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+        style={{
+          backgroundColor: "#000000",
+          color: "#cfb991",
+          fontFamily: "United Sans, sans-serif",
+        }}
         className="w-full py-4 text-center text-3xl font-bold"
       >
         Boiler Resources
@@ -133,7 +140,9 @@ const SignupForm = () => {
           )}
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Username
+            </label>
             <input
               type="text"
               value={username}
@@ -142,11 +151,15 @@ const SignupForm = () => {
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
               disabled={isSubmitting}
             />
-            {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
+            {errors.username && (
+              <p className="text-red-600 text-sm mt-1">{errors.username}</p>
+            )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -155,11 +168,15 @@ const SignupForm = () => {
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
               disabled={isSubmitting}
             />
-            {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -168,11 +185,15 @@ const SignupForm = () => {
                         focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
               disabled={isSubmitting}
             />
-            {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
+            {errors.password && (
+              <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+            )}
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Confirm Password
+            </label>
             <input
               type="password"
               value={confirmPassword}
@@ -182,7 +203,9 @@ const SignupForm = () => {
               disabled={isSubmitting}
             />
             {errors.confirmPassword && (
-              <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
+              <p className="text-red-600 text-sm mt-1">
+                {errors.confirmPassword}
+              </p>
             )}
           </div>
 
@@ -211,7 +234,9 @@ const SignupForm = () => {
           </div>
 
           <div className="text-center mt-4">
-            <span className="text-sm text-gray-600">Already have an account? </span>
+            <span className="text-sm text-gray-600">
+              Already have an account?{" "}
+            </span>
             <button
               type="button"
               onClick={() => navigate("/login")}

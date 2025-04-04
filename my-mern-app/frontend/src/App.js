@@ -1,8 +1,13 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import { ThemeProvider } from './context/ThemeContext';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext";
 
-import ProfileUI from './components/ProfileUI';
+import ProfileUI from "./components/ProfileUI";
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ForgotPassword from "./components/ForgotPassword";
@@ -15,6 +20,7 @@ import DeleteCompletedClass from "./components/DeleteCompletedClass";
 import ClassDetails from "./components/classDetails";
 import Chat from "./components/Chat";
 import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
+import CourseResources from "./components/CourseResources";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -38,19 +44,32 @@ function App() {
           <Route path="/" element={<SignupForm />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
+          <Route
+            path="/reset-password/:id/:token"
+            element={<ResetPassword />}
+          />
           <Route path="/verify-email/:id/:token" element={<VerifyEmail />} />
           <Route path="/home" element={<Home />} />
           <Route path="/profile" element={<ProfileUI />} />
           <Route path="/add-class" element={<AddClass />} />
           <Route path="/delete-class" element={<DeleteClass />} />
-          <Route path="/delete-completed-class" element={<DeleteCompletedClass />} />
+          <Route
+            path="/delete-completed-class"
+            element={<DeleteCompletedClass />}
+          />
           <Route path="/class/:id" element={<ClassDetails />} />
           <Route path="/oauth-callback" element={<OAuthHandler />} />
-
           {/* ✅ Chat + Calendar Routes */}
-          <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
-          <Route path="/calendar" element={<ScheduleCalendar />} /> {/* ✅ New route */}
+          <Route
+            path="/chat/:groupId"
+            element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />}
+          />
+          <Route path="/calendar" element={<ScheduleCalendar />} />{" "}
+          {/* ✅ New route */}
+          <Route
+            path="/course/:courseId/resources"
+            element={<CourseResources />}
+          />
         </Routes>
       </Router>
     </ThemeProvider>

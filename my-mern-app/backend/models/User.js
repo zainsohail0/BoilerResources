@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema(
     college: {
       type: String,
       default: "",
-    }
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields automatically

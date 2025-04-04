@@ -14,6 +14,7 @@ import courseRoutes from "./routes/classRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import calendarRoutes from "./routes/calendar.js"; // ✅ Added
 import messageRoutes from "./routes/messages.js"; // ✅ Added
+import resourceRoutes from "./routes/resourceRoutes.js"; // ✅ Added resource routes
 //import { router as messageRoutes } from "./routes/messages.js";
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
@@ -58,6 +59,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/calendar", calendarRoutes); // ✅ New route added
 app.use("/api/messages", messageRoutes);
+app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
