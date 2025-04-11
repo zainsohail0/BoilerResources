@@ -6,10 +6,14 @@ import {
   deleteResource,
   updateResource,
   vote,
-  addComment,
   upload,
-  createTestResource,
+  addComment,
+  getComments,
+  editComment,
+  deleteComment,
+  addReply,
 } from "../controllers/resourceController.js";
+import { Resource } from "../models/index.js";
 
 const router = express.Router();
 
@@ -36,7 +40,16 @@ router.post("/:resourceId/vote", protect, vote);
 // Add a comment to a resource
 router.post("/:resourceId/comments", protect, addComment);
 
-// Create a test resource
-router.post("/:courseId/test", protect, createTestResource);
+// Get comments for a resource
+router.get("/:resourceId/comments", protect, getComments);
+
+// Edit a comment
+router.put("/:resourceId/comments/:commentId", protect, editComment);
+
+// Delete a comment
+router.delete("/:resourceId/comments/:commentId", protect, deleteComment);
+
+// Add a reply to a comment
+router.post("/:resourceId/comments/:commentId/reply", protect, addReply);
 
 export default router;

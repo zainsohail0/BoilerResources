@@ -15,6 +15,7 @@ import groupRoutes from "./routes/groupRoutes.js";
 import calendarRoutes from "./routes/calendar.js"; // ✅ Added
 import messageRoutes from "./routes/messages.js"; // ✅ Added
 import resourceRoutes from "./routes/resourceRoutes.js"; // ✅ Added resource routes
+import bookmarkRoutes from "./routes/bookmarkRoutes.js";
 //import { router as messageRoutes } from "./routes/messages.js";
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
@@ -60,6 +61,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/calendar", calendarRoutes); // ✅ New route added
 app.use("/api/messages", messageRoutes);
 app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
+app.use("/api/bookmarks", bookmarkRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
@@ -87,6 +89,7 @@ chatSocketHandler(io);
 const PORT = process.env.PORT || 5001;
 
 mongoose
+  .set("debug", true)
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

@@ -1,80 +1,6 @@
 import mongoose from "mongoose";
+import resourceSchema from "./schemas/resourceSchema.js";
 import Vote from "./Vote.js";
-
-const resourceSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    required: true,
-    enum: ["pdf", "video", "link", "document", "other"],
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  datePosted: {
-    type: Date,
-    default: Date.now,
-  },
-  upvotes: {
-    type: Number,
-    default: 0,
-  },
-  downvotes: {
-    type: Number,
-    default: 0,
-  },
-  comments: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Comment",
-    },
-  ],
-  postedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  fileType: {
-    type: String,
-    required: true,
-    enum: [
-      ".jpg",
-      ".png",
-      ".gif",
-      ".doc",
-      ".docx",
-      ".pdf",
-      ".ppt",
-      ".pptx",
-      ".mp3",
-      ".wav",
-      ".mp4",
-      ".mov",
-    ],
-  },
-  shareLink: {
-    type: String,
-  },
-  courseId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Course",
-    required: true,
-    /*validate: {
-      validator: function (v) {
-        return mongoose.Types.ObjectId.isValid(v);
-      },
-      message: (props) => `${props.value} is not a valid ObjectId!`,
-    },*/
-  },
-});
 
 // Methods from the diagram
 resourceSchema.methods.getAttribute = function (name) {
@@ -134,10 +60,9 @@ resourceSchema.methods.downvote = async function (user) {
   return true;
 };
 
-resourceSchema.methods.addComment = async function (comment) {
-  this.comments.push(comment._id);
+resourceSchema.methods.addComment = async function (commentId) {
+  this.comments.push(commentId);
   await this.save();
-  return true;
 };
 
 resourceSchema.methods.generateShareLink = function () {
@@ -145,6 +70,7 @@ resourceSchema.methods.generateShareLink = function () {
   return this.save();
 };
 
-const Resource = mongoose.model("Resource", resourceSchema);
+const Resource =
+  mongoose.models.Resource || mongoose.model("Resource", resourceSchema);
 
 export default Resource;
