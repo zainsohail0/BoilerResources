@@ -16,6 +16,7 @@ const Home = () => {
   const [errorMessage, setErrorMessage] = useState(null);
 
   const handleGoToCalendar = () => navigate('/calendar');
+  const handleGoToPlanner = () => navigate('/planner'); // ✅ NEW
 
   useEffect(() => {
     const completed = JSON.parse(localStorage.getItem('completedClasses')) || [];
@@ -135,12 +136,18 @@ const Home = () => {
                 <>
                   <span className="text-white">Welcome, {user.username}!</span>
 
-                  {/* ✅ Calendar Button */}
+                  {/* ✅ Calendar + Planner Buttons */}
                   <button
                     onClick={handleGoToCalendar}
                     className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
                   >
                     View Calendar
+                  </button>
+                  <button
+                    onClick={handleGoToPlanner}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
+                  >
+                    View Planner
                   </button>
 
                   <ThemeToggle />

@@ -14,7 +14,8 @@ import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
 import ClassDetails from "./components/classDetails";
 import Chat from "./components/Chat";
-import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
+import ScheduleCalendar from "./components/setCalendar"; // ✅ Calendar route
+import TaskPlanner from "./components/TaskPlanner"; // ✅ New import
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -48,9 +49,10 @@ function App() {
           <Route path="/class/:id" element={<ClassDetails />} />
           <Route path="/oauth-callback" element={<OAuthHandler />} />
 
-          {/* ✅ Chat + Calendar Routes */}
+          {/* ✅ Chat + Calendar + Planner Routes */}
           <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
-          <Route path="/calendar" element={<ScheduleCalendar />} /> {/* ✅ New route */}
+          <Route path="/calendar" element={<ScheduleCalendar />} />
+          <Route path="/planner" element={<TaskPlanner />} /> {/* ✅ New planner route */}
         </Routes>
       </Router>
     </ThemeProvider>

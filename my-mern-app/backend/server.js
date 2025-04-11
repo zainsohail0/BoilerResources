@@ -12,9 +12,9 @@ import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/classRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
-import calendarRoutes from "./routes/calendar.js"; // ✅ Added
-import messageRoutes from "./routes/messages.js"; // ✅ Added
-//import { router as messageRoutes } from "./routes/messages.js";
+import calendarRoutes from "./routes/calendar.js";
+import messageRoutes from "./routes/messages.js";
+import plannerRoutes from "./routes/planner.js"; // ✅ Added planner route
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
 
@@ -23,6 +23,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
+// ✅ Middleware
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -56,8 +57,9 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/groups", groupRoutes);
-app.use("/api/calendar", calendarRoutes); // ✅ New route added
+app.use("/api/calendar", calendarRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/planner", plannerRoutes); // ✅ Register planner routes
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
