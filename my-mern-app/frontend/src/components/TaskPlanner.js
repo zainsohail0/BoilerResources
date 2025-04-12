@@ -142,7 +142,7 @@ const TaskPlanner = () => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">No tasks yet. Add one above to get started!</p>
+          <p className="text-gray-500 dark:text-gray-400">No tasks yet. Add one above to get started!!</p>
         )}
       </div>
     </div>
