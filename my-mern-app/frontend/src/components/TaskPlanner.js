@@ -74,11 +74,15 @@ const TaskPlanner = () => {
     }
   };
 
+  const incompleteTasks = tasks.filter((t) => !t.completed);
+  const completedTasks = tasks.filter((t) => t.completed);
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-4 py-8 text-black dark:text-white">
       <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">📋 Personal Task Planner</h2>
 
+        {/* Task Form */}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <input
             name="title"
@@ -114,36 +118,79 @@ const TaskPlanner = () => {
             <option value="medium">Medium Priority</option>
             <option value="high">High Priority</option>
           </select>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-            Add Task
+          <button
+            type="submit"
+            className="bg-black text-white font-semibold px-4 py-2 rounded-lg hover:bg-grey-700 transition col-span-1 md:col-span-2"
+          >
+            ➕ Add Task
           </button>
         </form>
 
-        {tasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tasks.map((task) => (
-              <div key={task._id} className={`p-4 rounded border-l-4 shadow dark:bg-gray-700 ${getPriorityClass(task.priority)}`}>
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleComplete(task)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <h3 className={`font-semibold text-lg ${task.completed ? "line-through text-gray-500" : "text-gray-900 dark:text-white"}`}>
-                      {task.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
-                    <p className="text-sm text-gray-500 mt-1">Due: {task.dueDate.slice(0, 10)}</p>
+        {/* Incomplete Tasks */}
+        <div className="mb-8">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">🕒 Incomplete Tasks</h3>
+          {incompleteTasks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {incompleteTasks.map((task) => (
+                <div
+                  key={task._id}
+                  className={`p-4 rounded border-l-4 shadow dark:bg-gray-700 ${getPriorityClass(task.priority)}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleComplete(task)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                        {task.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{task.description}</p>
+                      <p className="text-sm text-gray-500 mt-1">Due: {task.dueDate.slice(0, 10)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400">No tasks yet. Add one above to get started!!</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">No incomplete tasks.</p>
+          )}
+        </div>
+
+        {/* Completed Tasks */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">✅ Completed Tasks</h3>
+          {completedTasks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {completedTasks.map((task) => (
+                <div
+                  key={task._id}
+                  className={`p-4 rounded border-l-4 shadow dark:bg-gray-700 ${getPriorityClass(task.priority)}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleComplete(task)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-lg line-through text-gray-500">
+                        {task.title}
+                      </h3>
+                      <p className="text-sm text-gray-500">{task.description}</p>
+                      <p className="text-sm text-gray-400 mt-1">Due: {task.dueDate.slice(0, 10)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">No completed tasks yet.</p>
+          )}
+        </div>
       </div>
     </div>
   );
