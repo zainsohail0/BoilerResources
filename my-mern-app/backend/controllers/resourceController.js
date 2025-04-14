@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import mongoose from "mongoose";
+import Vote from "../models/Vote.js";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -273,25 +274,64 @@ export const vote = async (req, res) => {
   try {
     const { resourceId } = req.params;
     const { voteType } = req.body;
+    const userId = req.user._id;
+
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return res.status(400).json({ message: "Invalid vote type" });
+    }
 
     const resource = await Resource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
 
-    if (voteType === "upvote") {
-      resource.upvotes += 1;
-    } else if (voteType === "downvote") {
-      resource.downvotes += 1;
-    }
+    // Cast, toggle, or switch the vote
+    const result = await Vote.castVote(resourceId, userId, voteType);
 
+    // Recalculate upvotes/downvotes
+    const upvotes = await Vote.countDocuments({ resourceId, voteType: "upvote" });
+    const downvotes = await Vote.countDocuments({ resourceId, voteType: "downvote" });
+
+    resource.upvotes = upvotes;
+    resource.downvotes = downvotes;
     await resource.save();
-    res.json(resource);
-  } catch (error) {
-    console.error("Error voting on resource:", error);
-    res.status(500).json({ message: "Error voting on resource" });
+
+    res.status(200).json({
+      message: `Vote ${result.action}`,
+      voteType: result.voteType,
+      action: result.action,
+      upvotes,
+      downvotes,
+    });
+  } catch (err) {
+    console.error("Error processing vote:", err);
+    res.status(500).json({ message: "Failed to process vote" });
   }
 };
+
+// export const vote = async (req, res) => {
+//   try {
+//     const { resourceId } = req.params;
+//     const { voteType } = req.body;
+
+//     const resource = await Resource.findById(resourceId);
+//     if (!resource) {
+//       return res.status(404).json({ message: "Resource not found" });
+//     }
+
+//     if (voteType === "upvote") {
+//       resource.upvotes += 1;
+//     } else if (voteType === "downvote") {
+//       resource.downvotes += 1;
+//     }
+
+//     await resource.save();
+//     res.json(resource);
+//   } catch (error) {
+//     console.error("Error voting on resource:", error);
+//     res.status(500).json({ message: "Error voting on resource" });
+//   }
+// };
 
 // Create a test resource
 /*export const createTestResource = async (req, res) => {
