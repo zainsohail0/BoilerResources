@@ -28,6 +28,9 @@ import Chat from "./components/Chat";
 import ScheduleCalendar from "./components/setCalendar";
 import FeedbackForm from "./components/FeedbackForm";
 
+import CourseResources from "./components/CourseResources";
+import Bookmarks from "./components/Bookmarks";
+
 const OAuthHandler = () => {
   const navigate = useNavigate();
 
@@ -40,7 +43,6 @@ const OAuthHandler = () => {
       navigate("/home");
     }
   }, [navigate]);
-
   return <div>Redirecting...</div>;
 };
 

@@ -106,9 +106,7 @@ const Home = () => {
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch enrolled classes");
-      }
+      if (!res.ok) throw new Error("Failed to fetch enrolled classes");
 
       const data = await res.json();
       console.log("Classes fetched:", data);
@@ -742,7 +740,6 @@ const Home = () => {
               View and manage your saved resources
             </p>
           </div>
-
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
               Browse Categories
@@ -751,7 +748,6 @@ const Home = () => {
               Explore resources by category
             </p>
           </div>
-
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
               Community
@@ -767,4 +763,3 @@ const Home = () => {
 };
 
 export default Home;
-

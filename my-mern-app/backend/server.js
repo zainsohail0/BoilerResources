@@ -17,6 +17,7 @@ import exportCalendarRoutes from "./routes/googleCalendar.js";
 import messageRoutes from "./routes/messages.js";
 import chatSocketHandler from "./chatSocket.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
+import resourceRoutes from "./routes/resourceRoutes.js"; // ✅ Added resource routes
 import "./config/passport.js";
 
 dotenv.config();
@@ -63,6 +64,9 @@ app.use("/api/feedback", feedbackRoutes); // Ensure feedback route is registered
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/calendar/export", exportCalendarRoutes); // ✅ Export route registered
 app.use("/api/messages", messageRoutes);
+
+app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
+
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });

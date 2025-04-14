@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 const ProfileUI = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState({
-    username: '',
-    email: '',
-    college: '',
-    position: '',
-    grade: '',
-    major: '',
-    profileImage: '',
+    username: "",
+    email: "",
+    college: "",
+    position: "",
+    grade: "",
+    major: "",
+    profileImage: "",
   });
   const [originalProfile, setOriginalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +25,7 @@ const ProfileUI = () => {
   const [showFileInput, setShowFileInput] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const defaultAvatar = '/images/225-default-avatar.png'; // Relative URL to the image in the public directory
+  const defaultAvatar = "/images/225-default-avatar.png"; // Relative URL to the image in the public directory
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -93,34 +93,34 @@ const ProfileUI = () => {
       setMessage("User ID not found");
       return;
     }
-  
+
     try {
       // If there's a file to upload, send it to the backend upload endpoint first
-      let updatedProfile = {...profile}; // Create a copy of the current profile
-      
+      let updatedProfile = { ...profile }; // Create a copy of the current profile
+
       if (selectedFile) {
         const formData = new FormData();
-        formData.append('profilePicture', selectedFile);
-        formData.append('userId', userId);
-  
+        formData.append("profilePicture", selectedFile);
+        formData.append("userId", userId);
+
         const uploadRes = await axios.post(
-          'http://localhost:5001/api/auth/upload-profile-picture',
+          "http://localhost:5001/api/auth/upload-profile-picture",
           formData,
-          { 
+          {
             withCredentials: true,
             headers: {
-              'Content-Type': 'multipart/form-data'
-            }
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
-  
+
         // Get the profile picture URL from the response
         const imageUrl = uploadRes.data.profilePicture;
-        
+
         // Update our local copy with the new image URL
         updatedProfile.profileImage = imageUrl;
       }
-      
+
       // Now send the updated profile (with the new image URL if there was one)
 
       const response = await axios.put(
@@ -128,12 +128,12 @@ const ProfileUI = () => {
         updatedProfile,
         { withCredentials: true }
       );
-  
+
       // Update both profile and originalProfile with the response data
       setMessage("Profile updated successfully!");
       setProfile(response.data.user);
       setOriginalProfile(response.data.user);
-      
+
       setIsEditing(false);
       setShowFileInput(false);
       setSelectedFile(null);
@@ -141,7 +141,7 @@ const ProfileUI = () => {
       console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
       setMessage(error.response?.data?.message || "Error updating profile");
     }
@@ -151,7 +151,7 @@ const ProfileUI = () => {
     console.log("Cancel button clicked!"); // Debugging log
     setProfile(originalProfile); // Reset profile to original values
     setIsEditing(false);
-    setMessage(''); // Clear the message
+    setMessage(""); // Clear the message
     setShowFileInput(false); // Hide file input on cancel
     setSelectedFile(null); // Reset file selection
     setShowDeleteConfirm(false); // Hide delete confirmation
@@ -163,13 +163,13 @@ const ProfileUI = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
   };
 
   const handleGoHome = () => {
-    navigate('/home');
+    navigate("/home");
   };
 
   const handleFeedbackForm = () => navigate('/feedback');
@@ -203,7 +203,9 @@ const ProfileUI = () => {
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error("Error deleting profile picture:", error);
-      setMessage(error.response?.data?.message || "Error deleting profile picture");
+      setMessage(
+        error.response?.data?.message || "Error deleting profile picture"
+      );
     }
   };
 
@@ -211,7 +213,9 @@ const ProfileUI = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">Loading...</div>
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          Loading...
+        </div>
       </div>
     );
   }
@@ -223,7 +227,9 @@ const ProfileUI = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <span className="text-white text-xl font-bold">BoileResources</span>
+              <span className="text-white text-xl font-bold">
+                BoileResources
+              </span>
             </div>
             <div className="relative flex items-center gap-4">
               {user ? (
@@ -283,9 +289,15 @@ const ProfileUI = () => {
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl w-full space-y-8">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">Profile</h2>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              Profile
+            </h2>
           </div>
-          {message && <p className="text-center text-green-500 dark:text-green-400">{message}</p>}
+          {message && (
+            <p className="text-center text-green-500 dark:text-green-400">
+              {message}
+            </p>
+          )}
           <div className="flex">
             <div className="w-1/3 flex flex-col items-center">
               <div className="flex items-center justify-center mt-4">
@@ -366,11 +378,21 @@ const ProfileUI = () => {
                 )}
               </div>
             </div>
-            <div className="w-2/3 pl-8"> {/* Added padding-left for spacing */}
-              <form key={isEditing ? "editing" : "viewing"} className="mt-8 space-y-6" onSubmit={handleSave}>
-                <div className="rounded-md shadow-sm space-y-4"> {/* Added space-y-4 for spacing between fields */}
+            <div className="w-2/3 pl-8">
+              {" "}
+              {/* Added padding-left for spacing */}
+              <form
+                key={isEditing ? "editing" : "viewing"}
+                className="mt-8 space-y-6"
+                onSubmit={handleSave}
+              >
+                <div className="rounded-md shadow-sm space-y-4">
+                  {" "}
+                  {/* Added space-y-4 for spacing between fields */}
                   <div className="flex items-center">
-                    <label htmlFor="username" className="w-1/4">Username:</label>
+                    <label htmlFor="username" className="w-1/4">
+                      Username:
+                    </label>
                     <input
                       id="username"
                       name="username"
@@ -378,13 +400,23 @@ const ProfileUI = () => {
                       value={profile.username}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="Username"
                     />
-                    {errors.username && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.username}</p>}
+                    {errors.username && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.username}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center">
-                    <label htmlFor="email" className="w-1/4">Email:</label>
+                    <label htmlFor="email" className="w-1/4">
+                      Email:
+                    </label>
                     <input
                       id="email"
                       name="email"
@@ -392,13 +424,23 @@ const ProfileUI = () => {
                       value={profile.email}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="Email"
                     />
-                    {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
+                    {errors.email && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.email}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center">
-                    <label htmlFor="position" className="w-1/4">Position:</label>
+                    <label htmlFor="position" className="w-1/4">
+                      Position:
+                    </label>
                     <input
                       id="position"
                       name="position"
@@ -406,13 +448,23 @@ const ProfileUI = () => {
                       value={profile.position}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="Position"
                     />
-                    {errors.position && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.position}</p>}
+                    {errors.position && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.position}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center">
-                    <label htmlFor="grade" className="w-1/4">Grade:</label>
+                    <label htmlFor="grade" className="w-1/4">
+                      Grade:
+                    </label>
                     <input
                       id="grade"
                       name="grade"
@@ -420,13 +472,23 @@ const ProfileUI = () => {
                       value={profile.grade}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="Grade"
                     />
-                    {errors.grade && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.grade}</p>}
+                    {errors.grade && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.grade}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center">
-                    <label htmlFor="major" className="w-1/4">Major:</label>
+                    <label htmlFor="major" className="w-1/4">
+                      Major:
+                    </label>
                     <input
                       id="major"
                       name="major"
@@ -434,13 +496,23 @@ const ProfileUI = () => {
                       value={profile.major}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="Major"
                     />
-                    {errors.major && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.major}</p>}
+                    {errors.major && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.major}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center">
-                    <label htmlFor="college" className="w-1/4">College:</label>
+                    <label htmlFor="college" className="w-1/4">
+                      College:
+                    </label>
                     <input
                       id="college"
                       name="college"
@@ -448,10 +520,18 @@ const ProfileUI = () => {
                       value={profile.college}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${!isEditing ? "bg-gray-200 dark:bg-gray-700" : "bg-white dark:bg-gray-800"}`}
+                      className={`appearance-none rounded-none relative block w-3/4 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-b-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm ${
+                        !isEditing
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-white dark:bg-gray-800"
+                      }`}
                       placeholder="College"
                     />
-                    {errors.college && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.college}</p>}
+                    {errors.college && (
+                      <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                        {errors.college}
+                      </p>
+                    )}
                   </div>
                 </div>
 
