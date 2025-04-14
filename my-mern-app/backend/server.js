@@ -13,11 +13,13 @@ import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/classRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import calendarRoutes from "./routes/calendar.js";
-import exportCalendarRoutes from "./routes/googleCalendar.js"; 
+import exportCalendarRoutes from "./routes/googleCalendar.js";
 import messageRoutes from "./routes/messages.js";
-import chatSocketHandler from "./chatSocket.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
-import resourceRoutes from "./routes/resourceRoutes.js"; // ✅ Added resource routes
+import resourceRoutes from "./routes/resourceRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js"; // Added report routes
+
+import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
 
 dotenv.config();
@@ -54,19 +56,16 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ API Routes
+// API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/courses", courseRoutes); //Ensure courses route is registered
-app.use("/api/groups", groupRoutes); // Register study group routes
-app.use("/api/feedback", feedbackRoutes); // Ensure feedback route is registered
-
-// Debugging Route (Check Session Data)
+app.use("/api/courses", courseRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/feedback", feedbackRoutes);
 app.use("/api/calendar", calendarRoutes);
-app.use("/api/calendar/export", exportCalendarRoutes); // ✅ Export route registered
+app.use("/api/calendar/export", exportCalendarRoutes);
 app.use("/api/messages", messageRoutes);
-
-app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
-
+app.use("/api/resources", resourceRoutes);
+app.use("/api/reports", reportRoutes); // Added report routes
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
@@ -79,7 +78,7 @@ app.get("/debug-session", (req, res) => {
   });
 });
 
-// ✅ WebSocket Setup
+// WebSocket Setup
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -90,7 +89,7 @@ const io = new Server(server, {
 
 chatSocketHandler(io);
 
-// ✅ Start Server
+// Start Server
 const PORT = process.env.PORT || 5001;
 
 mongoose
@@ -100,7 +99,7 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
-
+    
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });

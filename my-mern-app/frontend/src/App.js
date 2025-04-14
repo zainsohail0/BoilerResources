@@ -28,16 +28,20 @@ import Chat from "./components/Chat";
 import ScheduleCalendar from "./components/setCalendar";
 import FeedbackForm from "./components/FeedbackForm";
 
+// Content Reporting Components
+import ReportForm from "./components/ReportForm";
+import AdminReports from "./components/AdminReports";
+
 import CourseResources from "./components/CourseResources";
 import Bookmarks from "./components/Bookmarks";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-
+    
     if (token) {
       localStorage.setItem("token", token);
       navigate("/home");
@@ -68,7 +72,7 @@ function App() {
             element={<DeleteCompletedClass />}
           />
           <Route path="/class/:id" element={<ClassDetails />} />
-
+          
           {/* Study Group Routes */}
           <Route path="/create-study-group" element={<CreateStudyGroup />} />
           <Route path="/study-group/:id" element={<StudyGroupDetails />} />
@@ -83,11 +87,15 @@ function App() {
             element={<ManageJoinRequests />}
           />
           <Route path="/pending-requests" element={<PendingJoinRequests />} />
-
+          
           {/* Chat, Calendar, and Feedback Routes */}
           <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
           <Route path="/calendar" element={<ScheduleCalendar />} />
           <Route path="/feedback" element={<FeedbackForm />} />
+          
+          {/* Content Reporting Routes */}
+          <Route path="/report" element={<ReportForm />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
           
           {/* OAuth Handler */}
           <Route path="/oauth-callback" element={<OAuthHandler />} />
