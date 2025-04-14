@@ -119,7 +119,7 @@ const TaskPlanner = () => {
             <option value="high">High Priority</option>
           </select>
           <button
-            type="submit"
+            type="submit" //fix task 
             className="bg-black text-white font-semibold px-4 py-2 rounded-lg hover:bg-grey-700 transition col-span-1 md:col-span-2"
           >
             ➕ Add Task
