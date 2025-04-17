@@ -17,6 +17,13 @@ import messageRoutes from "./routes/messages.js"; // ✅ Added
 import resourceRoutes from "./routes/resourceRoutes.js"; // ✅ Added resource routes
 import bookmarkRoutes from "./routes/bookmarkRoutes.js";
 //import { router as messageRoutes } from "./routes/messages.js";
+
+import exportCalendarRoutes from "./routes/googleCalendar.js";
+import messageRoutes from "./routes/messages.js";
+import feedbackRoutes from "./routes/feedbackRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js"; // Added report routes
+
+
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
 
@@ -54,14 +61,20 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ API Routes
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/groups", groupRoutes);
-app.use("/api/calendar", calendarRoutes); // ✅ New route added
+app.use("/api/feedback", feedbackRoutes);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/calendar/export", exportCalendarRoutes);
 app.use("/api/messages", messageRoutes);
+
 app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
 app.use("/api/bookmarks", bookmarkRoutes);
+
+app.use("/api/reports", reportRoutes); // Added report routes
+
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
@@ -74,7 +87,7 @@ app.get("/debug-session", (req, res) => {
   });
 });
 
-// ✅ WebSocket Setup
+// WebSocket Setup
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -85,7 +98,7 @@ const io = new Server(server, {
 
 chatSocketHandler(io);
 
-// ✅ Start Server
+// Start Server
 const PORT = process.env.PORT || 5001;
 
 mongoose
@@ -96,7 +109,7 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
-
+    
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });

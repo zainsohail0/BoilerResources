@@ -1,13 +1,8 @@
 import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useNavigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 
-import ProfileUI from "./components/ProfileUI";
+import ProfileUI from './components/ProfileUI';
 import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ForgotPassword from "./components/ForgotPassword";
@@ -18,17 +13,35 @@ import AddClass from "./components/AddClass";
 import DeleteClass from "./components/DeleteClass";
 import DeleteCompletedClass from "./components/DeleteCompletedClass";
 import ClassDetails from "./components/classDetails";
+
+// Study Group Components
+import CreateStudyGroup from "./components/CreateStudyGroup";
+import StudyGroupDetails from "./components/StudyGroupDetails";
+import ManageStudyGroup from "./components/ManageStudyGroup";
+import ClassStudyGroups from "./components/ClassStudyGroups";
+import GroupDetails from "./components/GroupDetails";
+import ManageJoinRequests from "./components/ManageJoinRequests";
+import PendingJoinRequests from "./components/PendingJoinRequests";
+
+// Calendar and Chat Components
 import Chat from "./components/Chat";
-import ScheduleCalendar from "./components/setCalendar"; // ✅ NEW
+import ScheduleCalendar from "./components/setCalendar";
+import FeedbackForm from "./components/FeedbackForm";
+
+// Content Reporting Components
+import ReportForm from "./components/ReportForm";
+import AdminReports from "./components/AdminReports";
+
 import CourseResources from "./components/CourseResources";
 import Bookmarks from "./components/Bookmarks";
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
+  
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-
+    
     if (token) {
       localStorage.setItem("token", token);
       navigate("/home");
@@ -59,19 +72,33 @@ function App() {
             element={<DeleteCompletedClass />}
           />
           <Route path="/class/:id" element={<ClassDetails />} />
+          
+          {/* Study Group Routes */}
+          <Route path="/create-study-group" element={<CreateStudyGroup />} />
+          <Route path="/study-group/:id" element={<StudyGroupDetails />} />
+          <Route
+            path="/manage-study-group/:id"
+            element={<ManageStudyGroup />}
+          />
+          <Route path="/class/:classId/groups" element={<ClassStudyGroups />} />
+          <Route path="/groups/:groupId" element={<GroupDetails />} />
+          <Route
+            path="/groups/:groupId/requests"
+            element={<ManageJoinRequests />}
+          />
+          <Route path="/pending-requests" element={<PendingJoinRequests />} />
+          
+          {/* Chat, Calendar, and Feedback Routes */}
+          <Route path="/chat/:groupId" element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />} />
+          <Route path="/calendar" element={<ScheduleCalendar />} />
+          <Route path="/feedback" element={<FeedbackForm />} />
+          
+          {/* Content Reporting Routes */}
+          <Route path="/report" element={<ReportForm />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+          
+          {/* OAuth Handler */}
           <Route path="/oauth-callback" element={<OAuthHandler />} />
-          {/* ✅ Chat + Calendar Routes */}
-          <Route
-            path="/chat/:groupId"
-            element={<Chat userId="650a4f2e9b5c7c001a2f3d89" />}
-          />
-          <Route path="/calendar" element={<ScheduleCalendar />} />{" "}
-          {/* ✅ New route */}
-          <Route
-            path="/course/:courseId/resources"
-            element={<CourseResources />}
-          />
-          <Route path="/bookmarks" element={<Bookmarks />} />
         </Routes>
       </Router>
     </ThemeProvider>

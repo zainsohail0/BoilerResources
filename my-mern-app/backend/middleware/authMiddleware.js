@@ -1,6 +1,10 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+/**
+ * Authentication middleware
+ * Checks if user is authenticated via JWT token or session
+ */
 export const protect = async (req, res, next) => {
   console.log("Auth Check - Session:", req.session);
   console.log("Auth Check - User:", req.user);
@@ -13,21 +17,41 @@ export const protect = async (req, res, next) => {
 
   // Then check JWT token
   try {
-    const token = req.cookies.token;
+    let token;
+    
+    // Extract token from Authorization header
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    } 
+    // Or from cookie
+    else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    // Or from local storage through body (should be avoided in production)
+    else if (req.body && req.body.token) {
+      token = req.body.token;
+    }
 
     if (!token) {
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.status(401).json({ 
+        success: false, 
+        message: "Not authenticated. Please log in." 
+      });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Fetch the full user object
+    
+    // Find user by ID from decoded token
     const user = await User.findById(decoded.id).select("-password");
+    
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ 
+        success: false, 
+        message: "User not found" 
+      });
     }
 
-    // Set the full user object in the request
+    // Attach user object to request
     req.user = user;
     next();
 
@@ -40,6 +64,86 @@ export const protect = async (req, res, next) => {
     }
   } catch (error) {
     console.error("Auth Error:", error);
-    res.status(401).json({ message: "Not authenticated" });
+    return res.status(401).json({ 
+      success: false, 
+      message: "Authentication failed. " + (error.name === "JsonWebTokenError" ? "Invalid token." : error.message)
+    });
   }
+};
+
+/**
+ * Admin authorization middleware
+ * Checks if authenticated user is an admin
+ * Must be used after protect middleware
+ */
+export const isAdmin = (req, res, next) => {
+  // Ensure user is authenticated first
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false, 
+      message: "Not authenticated" 
+    });
+  }
+
+  // Check if user is an admin
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ 
+      success: false, 
+      message: "Access denied. Admin privileges required." 
+    });
+  }
+
+  next();
+};
+
+/**
+ * Resource owner middleware
+ * Checks if authenticated user owns the resource or is an admin
+ * @param {Function} getOwnerIdFromRequest - Function to extract owner ID from request
+ */
+export const isResourceOwner = (getOwnerIdFromRequest) => {
+  return async (req, res, next) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Not authenticated" 
+        });
+      }
+
+      // If user is admin, allow access regardless of ownership
+      if (req.user.isAdmin) {
+        return next();
+      }
+
+      // Get owner ID from request using the provided function
+      const ownerId = await getOwnerIdFromRequest(req);
+      
+      // If ownerId could not be determined
+      if (!ownerId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Resource not found" 
+        });
+      }
+
+      // Check if authenticated user is the owner
+      if (ownerId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Access denied. You do not own this resource." 
+        });
+      }
+
+      next();
+    } catch (err) {
+      console.error("Resource owner check error:", err);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error checking resource ownership", 
+        error: err.message 
+      });
+    }
+  };
 };
