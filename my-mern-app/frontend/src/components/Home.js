@@ -31,8 +31,8 @@ const Home = () => {
       window.history.replaceState({}, document.title);
     }
   }, [shouldRefreshGroups]);
-  const handleGoToCalendar = () => navigate('/calendar');
-  const handleGoToPlanner = () => navigate('/planner'); // ✅ NEW
+  //const handleGoToCalendar = () => navigate('/calendar');
+  const handleGoToPlanner = () => navigate("/planner"); // ✅ NEW
 
   useEffect(() => {
     // Load completed classes from localStorage
@@ -425,7 +425,6 @@ const Home = () => {
               {user ? (
                 <>
                   <span className="text-white">Welcome, {user.username}!</span>
-
 
                   {/* Report Button */}
                   <button
