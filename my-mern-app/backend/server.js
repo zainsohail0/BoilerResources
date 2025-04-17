@@ -19,11 +19,11 @@ import bookmarkRoutes from "./routes/bookmarkRoutes.js";
 //import { router as messageRoutes } from "./routes/messages.js";
 
 import exportCalendarRoutes from "./routes/googleCalendar.js";
-import messageRoutes from "./routes/messages.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js"; // Added report routes
 
 
+import plannerRoutes from "./routes/planner.js"; // ✅ Added planner route
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
 
@@ -32,6 +32,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
+// ✅ Middleware
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -66,9 +67,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/feedback", feedbackRoutes);
-app.use("/api/calendar", calendarRoutes);
 app.use("/api/calendar/export", exportCalendarRoutes);
+app.use("/api/calendar", calendarRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/planner", plannerRoutes); // ✅ Register planner routes
 
 app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
 app.use("/api/bookmarks", bookmarkRoutes);
