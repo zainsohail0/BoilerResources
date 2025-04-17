@@ -22,7 +22,6 @@ import exportCalendarRoutes from "./routes/googleCalendar.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js"; // Added report routes
 
-
 import plannerRoutes from "./routes/planner.js"; // ✅ Added planner route
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
@@ -77,7 +76,6 @@ app.use("/api/bookmarks", bookmarkRoutes);
 
 app.use("/api/reports", reportRoutes); // Added report routes
 
-
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });
 });
@@ -111,7 +109,7 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
-    
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
