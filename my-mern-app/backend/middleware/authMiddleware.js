@@ -54,6 +54,14 @@ export const protect = async (req, res, next) => {
     // Attach user object to request
     req.user = user;
     next();
+
+    if (user && user._id) {
+      req.user = {
+        _id: user._id,
+        username: user.username,
+        // other user properties
+      };
+    }
   } catch (error) {
     console.error("Auth Error:", error);
     return res.status(401).json({ 

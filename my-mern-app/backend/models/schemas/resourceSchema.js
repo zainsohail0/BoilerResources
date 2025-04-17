@@ -1,73 +1,76 @@
 import mongoose from "mongoose";
 
-const resourceSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    required: true,
-    enum: ["image", "document", "audio", "video"],
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  datePosted: {
-    type: Date,
-    default: Date.now,
-  },
-  upvotes: {
-    type: Number,
-    default: 0,
-  },
-  downvotes: {
-    type: Number,
-    default: 0,
-  },
-  comments: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Comment",
+const resourceSchema = new mongoose.Schema(
+  {
+    courseId: {
+      type: String,
+      ref: "Course",
+      required: true,
     },
-  ],
-  postedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  fileType: {
-    type: String,
-    required: true,
-    enum: [
-      ".jpg",
-      ".png",
-      ".gif",
-      ".doc",
-      ".docx",
-      ".pdf",
-      ".ppt",
-      ".pptx",
-      ".mp3",
-      ".wav",
-      ".mp4",
-      ".mov",
+    title: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: ["image", "document", "audio", "video", "pdf", "link", "other"],
+    },
+    url: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    datePosted: {
+      type: Date,
+      default: Date.now,
+    },
+    upvotes: {
+      type: Number,
+      default: 0,
+    },
+    downvotes: {
+      type: Number,
+      default: 0,
+    },
+    comments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+      },
     ],
+    postedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    fileType: {
+      type: String,
+      required: true,
+      enum: [
+        ".jpg",
+        ".png",
+        ".gif",
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".ppt",
+        ".pptx",
+        ".mp3",
+        ".wav",
+        ".mp4",
+        ".mov",
+      ],
+    },
+    shareLink: {
+      type: String,
+    },
   },
-  shareLink: {
-    type: String,
-  },
-  courseId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Course",
-    required: true,
-  },
-});
+  { strict: false }
+);
 
 // Methods
 resourceSchema.methods.getAttribute = function (name) {

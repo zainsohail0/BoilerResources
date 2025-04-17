@@ -1,5 +1,5 @@
 import express from "express";
-import { Course, Resource } from "../models/Course.js";
+import { Course, Resource } from "../models/index.js";
 import mongoose from "mongoose";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";

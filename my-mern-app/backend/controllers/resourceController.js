@@ -1,4 +1,4 @@
-import { Resource, Comment, Course } from "../models/index.js";
+import { Resource, Course, Comment } from "../models/index.js";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
@@ -35,202 +35,183 @@ const storage = new CloudinaryStorage({
 });
 
 // Create multer upload middleware
-export const upload = multer({ storage: storage });
+export const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 // Get all resources for a course
 export const getCourseResources = async (req, res) => {
   try {
-    console.log("\n=== GET COURSE RESOURCES ===");
     const { courseId } = req.params;
 
-    console.log("Request details:", {
-      params: req.params,
-      courseId: courseId,
-      userId: req.user?._id,
-    });
-
     if (!courseId) {
-      console.log("No courseId provided");
       return res.status(400).json({ message: "Course ID is required" });
     }
 
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      console.log("Invalid courseId format:", courseId);
       return res.status(400).json({ message: "Invalid course ID format" });
     }
 
-    // Convert courseId to ObjectId for comparison
     const courseObjectId = new mongoose.Types.ObjectId(courseId);
 
-    // First, verify the course exists
     const course = await Course.findById(courseObjectId);
     if (!course) {
-      console.log("Course not found:", courseId);
       return res.status(404).json({ message: "Course not found" });
     }
 
-    console.log("Finding resources for course:", courseObjectId.toString());
-
-    // Find resources with explicit courseId match
     const resources = await Resource.find({
       courseId: courseObjectId,
     })
-      .populate("postedBy", "username")
+      .populate("postedBy", "username _id")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          model: "User",
+          select: "username _id",
+        },
+      })
       .sort("-datePosted");
 
-    // Log all resources in the database for debugging
-    const allResources = await Resource.find({}).select("_id title courseId");
-    console.log("All resources in database:", {
-      count: allResources.length,
-      resources: allResources.map((r) => ({
-        _id: r._id,
-        title: r.title,
-        courseId: r.courseId?.toString(),
-      })),
-    });
-
-    // Try an alternative query to double-check
-    const altResources = await Resource.find({
-      courseId: { $eq: courseObjectId },
-    });
-
-    console.log("Found resources for this course:", {
-      count: resources.length,
-      altQueryCount: altResources.length,
-      courseName: course.title,
-      courseId: courseObjectId.toString(),
-      resources: resources.map((r) => ({
-        _id: r._id,
-        title: r.title,
-        courseId: r.courseId?.toString(),
-        postedBy: r.postedBy?.username,
-        url: r.url,
-        type: r.type,
-      })),
-    });
-
-    // Send just the resources array as the frontend expects
     res.json(resources);
   } catch (error) {
-    console.error("Error in getCourseResources:", {
-      message: error.message,
-      stack: error.stack,
-    });
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching resources:", error);
+    res.status(500).json({ message: "Error fetching resources" });
   }
 };
 
 // Upload a new resource
 export const uploadResource = async (req, res) => {
   try {
-    console.log("\n=== UPLOAD RESOURCE ===");
+    console.log("Upload request received:", {
+      body: req.body,
+      file: req.file,
+      user: req.user?._id,
+    });
 
-    // Check if file was uploaded
-    if (!req.file) {
-      console.log("No file uploaded");
+    const { title, description, type, courseId } = req.body;
+    const file = req.file;
+
+    // Check authentication
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        message: "Authentication required",
+        details: "You must be logged in to upload resources",
+      });
+    }
+
+    // Validate required fields
+    if (!title || !description || !type || !courseId) {
+      return res.status(400).json({
+        message: "Missing required fields",
+        details: "Title, description, type, and courseId are required",
+      });
+    }
+
+    // Validate file
+    if (!file) {
       return res.status(400).json({
         message: "No file uploaded",
-        success: false,
+        details: "Please select a file to upload",
       });
     }
 
-    // Get courseId from URL params
-    const courseId = req.params.courseId;
-    if (!courseId) {
-      console.log("No courseId provided");
-      return res.status(400).json({
-        message: "Course ID is required",
-        success: false,
-      });
-    }
-
-    // Validate courseId format
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      console.log("Invalid courseId format:", courseId);
-      return res.status(400).json({
-        message: "Invalid course ID format",
-        success: false,
-      });
-    }
-
-    // Verify course exists
+    // Validate course exists
     const course = await Course.findById(courseId);
     if (!course) {
-      console.log("Course not found:", courseId);
       return res.status(404).json({
         message: "Course not found",
-        success: false,
+        details: "The specified course does not exist",
       });
     }
 
-    // Get user ID from request
-    if (!req.user?._id) {
-      console.log("No user found in request");
-      return res.status(401).json({
-        message: "User not authenticated",
-        success: false,
+    // Validate file type
+    const allowedTypes = [
+      "image",
+      "document",
+      "audio",
+      "video",
+      "pdf",
+      "link",
+      "other",
+    ];
+    if (!allowedTypes.includes(type)) {
+      return res.status(400).json({
+        message: "Invalid resource type",
+        details: `Resource type must be one of: ${allowedTypes.join(", ")}`,
       });
     }
 
-    const { title, description } = req.body;
-    const fileType = "." + req.file.originalname.split(".").pop().toLowerCase();
+    // Get file extension from the original filename
+    const fileExtension = file.originalname.split(".").pop().toLowerCase();
+    const allowedExtensions = [
+      "jpg",
+      "png",
+      "gif",
+      "doc",
+      "docx",
+      "pdf",
+      "ppt",
+      "pptx",
+      "mp3",
+      "wav",
+      "mp4",
+      "mov",
+    ];
 
-    // Determine resource type based on file type
-    let resourceType = "other";
-    if ([".jpg", ".png", ".gif"].includes(fileType)) {
-      resourceType = "document";
-    } else if ([".pdf"].includes(fileType)) {
-      resourceType = "pdf";
-    } else if ([".mp4", ".mov"].includes(fileType)) {
-      resourceType = "video";
-    } else if ([".doc", ".docx", ".ppt", ".pptx"].includes(fileType)) {
-      resourceType = "document";
+    if (!allowedExtensions.includes(fileExtension)) {
+      return res.status(400).json({
+        message: "Invalid file type",
+        details: `File type must be one of: ${allowedExtensions.join(", ")}`,
+      });
     }
 
-    // Create resource with Cloudinary URL
+    console.log("File uploaded to Cloudinary:", file);
+
+    // Create and save the resource
     const resource = new Resource({
       title,
       description,
-      type: resourceType,
-      url: req.file.path, // Use Cloudinary URL
-      fileType,
-      courseId: course._id, // Use course's _id
-      postedBy: req.user._id,
+      type,
+      url: file.path || file.secure_url, // Handle both path formats
+      fileType: `.${fileExtension}`,
+      courseId: new mongoose.Types.ObjectId(courseId),
+      postedBy: new mongoose.Types.ObjectId(req.user._id),
       datePosted: new Date(),
-      upvotes: 0,
-      downvotes: 0,
-      comments: [],
     });
 
-    // Save resource
     const savedResource = await resource.save();
-    if (!savedResource) {
-      throw new Error("Failed to save resource");
-    }
+    console.log("Resource saved:", savedResource);
 
-    // Update course's resources array - only store the resource ID
-    await Course.findByIdAndUpdate(
-      courseId,
-      { $push: { resources: savedResource._id } },
-      { new: true }
-    );
+    // Return the saved resource with populated fields
+    const populatedResource = await Resource.findById(savedResource._id)
+      .populate("postedBy", "username _id")
+      .populate("courseId", "title courseCode");
 
-    // Get final resource with populated fields
-    const finalResource = await Resource.findById(savedResource._id).populate(
-      "postedBy",
-      "username"
-    );
-
-    res.status(201).json({
-      message: "Resource uploaded successfully",
-      success: true,
-      resource: finalResource,
-    });
+    res.status(201).json(populatedResource);
   } catch (error) {
-    console.error("Error in uploadResource:", error);
+    console.error("Error uploading resource:", error);
+    // Check for specific error types
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Validation error",
+        details: Object.values(error.errors)
+          .map((err) => err.message)
+          .join(", "),
+      });
+    }
+    if (error.name === "MongoServerError" && error.code === 11000) {
+      return res.status(400).json({
+        message: "Duplicate resource",
+        details: "A resource with this name already exists",
+      });
+    }
     res.status(500).json({
-      message: error.message,
-      success: false,
+      message: "Error uploading resource",
+      details: error.message,
     });
   }
 };
@@ -239,26 +220,23 @@ export const uploadResource = async (req, res) => {
 export const deleteResource = async (req, res) => {
   try {
     const { resourceId } = req.params;
-    const resource = await Resource.findById(resourceId);
 
+    const resource = await Resource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
 
-    // Check if user is authorized to delete
     if (resource.postedBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this resource" });
     }
 
-    // Delete from Cloudinary
-    const publicId = resource.url.split("/").pop().split(".")[0];
-    await cloudinary.uploader.destroy(publicId);
-
-    // Delete from database
-    await resource.remove();
+    await Resource.findByIdAndDelete(resourceId);
     res.json({ message: "Resource deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error deleting resource:", error);
+    res.status(500).json({ message: "Error deleting resource" });
   }
 };
 
@@ -274,16 +252,19 @@ export const updateResource = async (req, res) => {
     }
 
     if (resource.postedBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this resource" });
     }
 
     resource.title = title || resource.title;
     resource.description = description || resource.description;
 
-    const updatedResource = await resource.save();
-    res.json(updatedResource);
+    await resource.save();
+    res.json(resource);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error updating resource:", error);
+    res.status(500).json({ message: "Error updating resource" });
   }
 };
 
@@ -298,20 +279,42 @@ export const vote = async (req, res) => {
       return res.status(404).json({ message: "Resource not found" });
     }
 
-    const result =
-      voteType === "upvote"
-        ? await resource.upvote(req.user)
-        : await resource.downvote(req.user);
-
-    if (!result) {
-      return res.status(400).json({ message: "Already voted" });
+    if (voteType === "upvote") {
+      resource.upvotes += 1;
+    } else if (voteType === "downvote") {
+      resource.downvotes += 1;
     }
 
+    await resource.save();
     res.json(resource);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error voting on resource:", error);
+    res.status(500).json({ message: "Error voting on resource" });
   }
 };
+
+// Create a test resource
+/*export const createTestResource = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const resource = new Resource({
+      title: "Test Resource",
+      description: "This is a test resource",
+      type: "document",
+      url: "https://example.com/test.pdf",
+      fileType: "pdf",
+      courseId,
+      postedBy: req.user._id,
+    });
+
+    await resource.save();
+    res.status(201).json(resource);
+  } catch (error) {
+    console.error("Error creating test resource:", error);
+    res.status(500).json({ message: "Error creating test resource" });
+  }
+};*/
 
 // Add a comment to a resource
 export const addComment = async (req, res) => {
@@ -319,100 +322,214 @@ export const addComment = async (req, res) => {
     const { resourceId } = req.params;
     const { content } = req.body;
 
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        message: "Authentication required",
+        details: "You must be logged in to post a comment",
+      });
+    }
+
     const resource = await Resource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
 
+    // Create a new comment
     const comment = await Comment.create({
       content,
-      author: req.user._id,
-      resource: resourceId,
+      author: new mongoose.Types.ObjectId(req.user._id),
+      resource: new mongoose.Types.ObjectId(resourceId),
+      datePosted: new Date(),
     });
 
-    await resource.addComment(comment);
-    res.status(201).json(comment);
+    // Add the comment to the resource using the method
+    //await resource.addComment(comment._id);
+
+    await comment.save();
+
+    // Add to resource's comments array
+    resource.comments.push(comment._id);
+    await resource.save();
+
+    // Get the populated comment with author information
+    const populatedComment = await Comment.findById(comment._id)
+      .populate({
+        path: "author",
+        select: "username _id",
+        //model: "User",
+      })
+      .exec();
+
+    res.status(201).json(populatedComment);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error adding comment:", error);
+    res.status(500).json({
+      message: "Error adding comment",
+      details: error.message,
+    });
   }
 };
 
-// Test function to create a hard-coded resource
-export const createTestResource = async (req, res) => {
+// Get comments for a resource
+export const getComments = async (req, res) => {
   try {
-    console.log("\n=== CREATING TEST RESOURCE ===");
+    const { resourceId } = req.params;
+    const { sortBy = "newest" } = req.query; // Default to newest first
 
-    // Validate courseId
-    const courseId = req.params.courseId;
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      console.log("Invalid courseId:", courseId);
-      return res.status(400).json({ message: "Invalid course ID" });
-    }
+    const sortOrder = sortBy === "oldest" ? "datePosted" : "-datePosted";
 
-    // Verify course exists
-    const course = await Course.findById(courseId);
-    if (!course) {
-      console.log("Course not found:", courseId);
-      return res.status(404).json({ message: "Course not found" });
-    }
+    const comments = await Comment.find({
+      resource: resourceId,
+      parentComment: null, // Only get top-level comments
+    })
+      .populate({
+        path: "author",
+        select: "username _id",
+        model: "User",
+      })
+      .populate({
+        path: "replies",
+        populate: {
+          path: "author",
+          select: "username _id",
+          model: "User",
+        },
+        options: { sort: { datePosted: sortBy === "oldest" ? 1 : -1 } },
+      })
+      .sort(sortOrder);
 
-    console.log("Found course:", {
-      _id: course._id,
-      title: course.title,
-    });
-
-    // Create test resource
-    const testResource = new Resource({
-      title: "Test Resource",
-      description: "This is a test resource",
-      type: "document",
-      url: "https://example.com/test.pdf",
-      fileType: ".pdf",
-      courseId: course._id, // Use the course's _id
-      postedBy: req.user._id,
-      datePosted: new Date(),
-      upvotes: 0,
-      downvotes: 0,
-      comments: [],
-    });
-
-    // Log before saving
-    console.log("Test resource before save:", {
-      title: testResource.title,
-      courseId: testResource.courseId.toString(),
-      postedBy: testResource.postedBy.toString(),
-    });
-
-    // Save to MongoDB
-    const savedResource = await testResource.save();
-
-    if (!savedResource) {
-      throw new Error("Failed to save test resource");
-    }
-
-    // Verify the save
-    console.log("Test resource saved:", {
-      _id: savedResource._id,
-      title: savedResource.title,
-      courseId: savedResource.courseId.toString(),
-    });
-
-    // Add to course's resources array
-    course.resources.push(savedResource._id);
-    await course.save();
-
-    // Verify course update
-    const updatedCourse = await Course.findById(courseId);
-    console.log("Course resources after update:", {
-      courseId: updatedCourse._id,
-      resourceCount: updatedCourse.resources.length,
-      lastResource:
-        updatedCourse.resources[updatedCourse.resources.length - 1]?.toString(),
-    });
-
-    res.status(201).json(savedResource);
+    res.json(comments);
   } catch (error) {
-    console.error("Error creating test resource:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching comments:", error);
+    res.status(500).json({ message: "Error fetching comments" });
+  }
+};
+
+// Edit a comment
+export const editComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Check if the user is the author of the comment
+    if (comment.author.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to edit this comment" });
+    }
+
+    comment.content = content;
+    await comment.save();
+
+    // Get the populated comment with author information
+    const populatedComment = await Comment.findById(commentId).populate(
+      "author",
+      "username"
+    );
+
+    res.json(populatedComment);
+  } catch (error) {
+    console.error("Error editing comment:", error);
+    res.status(500).json({ message: "Error editing comment" });
+  }
+};
+
+// Delete a comment
+export const deleteComment = async (req, res) => {
+  try {
+    const { resourceId, commentId } = req.params;
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Check if the user is the author of the comment
+    if (comment.author.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this comment" });
+    }
+
+    // Remove the comment from the resource
+    const resource = await Resource.findById(resourceId);
+    if (resource) {
+      resource.comments = resource.comments.filter(
+        (id) => id.toString() !== commentId
+      );
+      await resource.save();
+    }
+
+    // Delete the comment
+    await Comment.findByIdAndDelete(commentId);
+
+    res.json({ message: "Comment deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    res.status(500).json({ message: "Error deleting comment" });
+  }
+};
+
+// Add a reply to a comment
+export const addReply = async (req, res) => {
+  try {
+    const { resourceId, commentId } = req.params;
+    const { content } = req.body;
+
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        message: "Authentication required",
+        details: "You must be logged in to post a reply",
+      });
+    }
+
+    // Find the parent comment
+    const parentComment = await Comment.findById(commentId);
+    if (!parentComment) {
+      return res.status(404).json({ message: "Parent comment not found" });
+    }
+
+    // Verify that the resource exists
+    const resource = await Resource.findById(resourceId);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found" });
+    }
+
+    // Create the reply
+    const reply = await Comment.create({
+      content,
+      author: req.user._id,
+      resource: resourceId,
+      parentComment: commentId,
+      datePosted: new Date(),
+    });
+
+    // Add the reply to the resource's comments array
+    resource.comments.push(reply._id);
+    await resource.save();
+
+    // Get the populated reply with author information
+    const populatedReply = await Comment.findById(reply._id)
+      .populate({
+        path: "author",
+        select: "username _id",
+        model: "User",
+      })
+      .exec();
+
+    res.status(201).json(populatedReply);
+  } catch (error) {
+    console.error("Error adding reply:", error);
+    res.status(500).json({
+      message: "Error adding reply",
+      details: error.message,
+    });
   }
 };
