@@ -22,8 +22,8 @@ const Home = () => {
   const shouldRefreshGroups = location.state?.refreshGroups;
   const newGroupId = location.state?.newGroupId;
 
-  const handleReportContent = () => navigate('/report');
-  const handleAdminReports = () => navigate('/admin/reports');
+  const handleReportContent = () => navigate("/report");
+  const handleAdminReports = () => navigate("/admin/reports");
 
   useEffect(() => {
     // Clear the location state to prevent refreshing on future navigations
@@ -48,8 +48,11 @@ const Home = () => {
 
   useEffect(() => {
     console.log("Current localStorage contents:");
-    console.log("userId:", localStorage.getItem('userId'));
-    console.log("token:", localStorage.getItem('token') ? "Present" : "Missing");
+    console.log("userId:", localStorage.getItem("userId"));
+    console.log(
+      "token:",
+      localStorage.getItem("token") ? "Present" : "Missing"
+    );
     // Check all localStorage items
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -158,21 +161,21 @@ const Home = () => {
       const headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-        "X-User-ID": userId
+        Pragma: "no-cache",
+        Expires: "0",
+        "X-User-ID": userId,
       };
-  
+
       const res = await fetch(
         `${API_URL}/api/groups/user/${userId}?t=${timestamp}`,
         {
           credentials: "include",
-          headers
+          headers,
         }
       );
-  
+
       console.log("Study groups response status:", res.status);
-  
+
       if (!res.ok) {
         console.error(
           "Failed to fetch study groups:",
@@ -181,18 +184,18 @@ const Home = () => {
         );
         const errorText = await res.text();
         console.error("Error response:", errorText);
-  
+
         // Use fallback from localStorage if API fails
         tryFallbackGroups(userId, highlightGroupId);
         return;
       }
-  
+
       const data = await res.json();
       console.log("Study groups fetched:", data);
-      
+
       // Store in localStorage as backup for future fallbacks
-      localStorage.setItem('lastFetchedGroups', JSON.stringify(data));
-  
+      localStorage.setItem("lastFetchedGroups", JSON.stringify(data));
+
       if (Array.isArray(data) && data.length > 0) {
         // Ensure we have class details for each group
         const groupsWithClasses = data.map((group) => {
@@ -212,10 +215,13 @@ const Home = () => {
           }
           return group;
         });
-  
-        console.log("Setting study groups with class details:", groupsWithClasses);
+
+        console.log(
+          "Setting study groups with class details:",
+          groupsWithClasses
+        );
         setStudyGroups(groupsWithClasses);
-  
+
         // If we have a new group ID to highlight, make sure it's in the list
         if (highlightGroupId && !data.some((g) => g._id === highlightGroupId)) {
           console.log(
@@ -225,9 +231,9 @@ const Home = () => {
         }
       } else {
         console.log("No study groups returned from API, trying fallback...");
-        
+
         // First check if we had previously fetched groups
-        const lastFetched = localStorage.getItem('lastFetchedGroups');
+        const lastFetched = localStorage.getItem("lastFetchedGroups");
         if (lastFetched) {
           try {
             const parsedGroups = JSON.parse(lastFetched);
@@ -240,7 +246,7 @@ const Home = () => {
             console.error("Error parsing lastFetchedGroups:", e);
           }
         }
-        
+
         // If no previous fetch, try the standard fallback
         tryFallbackGroups(userId, highlightGroupId);
       }
@@ -344,9 +350,9 @@ const Home = () => {
     navigate(`/class/${classId}/groups`);
   const handleViewPendingRequests = () => navigate("/pending-requests");
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
-  const handleFeedbackForm = () => navigate('/feedback');
+  const handleFeedbackForm = () => navigate("/feedback");
 
-  const handleGoToCalendar = () => navigate('/calendar');
+  const handleGoToCalendar = () => navigate("/calendar");
 
   const handleMarkAsComplete = (classToComplete) => {
     const completedClass = {
@@ -422,7 +428,7 @@ const Home = () => {
                   <button
                     onClick={handleReportContent}
                     className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-                  > 
+                  >
                     Report Content
                   </button>
 
@@ -441,8 +447,18 @@ const Home = () => {
                       onClick={toggleDropdown}
                       className="text-white bg-black dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition"
                     >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 6h16M4 12h16m-7 6h7"
+                        />
                       </svg>
                     </button>
                     {dropdownOpen && (
@@ -460,14 +476,14 @@ const Home = () => {
                           Feedback Form
                         </button>
                         {/* Admin Reports Option (Only show for admins) */}
-                          {user.isAdmin && (
-                            <button
-                              onClick={handleAdminReports}
-                              className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                            >
-                              Admin Reports
-                            </button>
-                          )}
+                        {user.isAdmin && (
+                          <button
+                            onClick={handleAdminReports}
+                            className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            Admin Reports
+                          </button>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -560,6 +576,14 @@ const Home = () => {
                     >
                       Details
                     </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/course/${classItem._id}/resources`)
+                      }
+                      className="bg-yellow-600 dark:bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 transition"
+                    >
+                      View Resources
+                    </button>
                     {/* New button for Study Groups */}
                     <button
                       onClick={() => handleViewClassGroups(classItem._id)}
@@ -627,17 +651,17 @@ const Home = () => {
               </button>
 
               {/* Add Clear Storage button here */}
-      <button
-        onClick={() => {
-          localStorage.clear();
-          sessionStorage.clear();
-          console.log("Storage cleared");
-          window.location.reload();
-        }}
-        className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition"
-      >
-        Clear Storage
-      </button>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  console.log("Storage cleared");
+                  window.location.reload();
+                }}
+                className="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition"
+              >
+                Clear Storage
+              </button>
             </div>
           </div>
 

@@ -33,44 +33,64 @@ const ClassDetails = () => {
 
         // Fetch other classes taught by any of the professors (limit 3)
         if (data.professor) {
-          const professorNames = data.professor.split(",").map(name => name.trim());
+          const professorNames = data.professor
+            .split(",")
+            .map((name) => name.trim());
           let allFoundClasses = []; // Store ALL found classes here
 
           for (const professorName of professorNames) {
             console.log(`Fetching classes for professor: "${professorName}"`);
-            
+
             try {
-              const otherClassesResponse = await fetch(`${API_URL}/api/courses/professor/${encodeURIComponent(professorName)}`, {
-                credentials: "include",
-              });
-              
+              const otherClassesResponse = await fetch(
+                `${API_URL}/api/courses/professor/${encodeURIComponent(
+                  professorName
+                )}`,
+                {
+                  credentials: "include",
+                }
+              );
+
               if (otherClassesResponse.ok) {
                 const otherClassesData = await otherClassesResponse.json();
-                console.log(`Found ${otherClassesData.length} classes for ${professorName}`);
-                
+                console.log(
+                  `Found ${otherClassesData.length} classes for ${professorName}`
+                );
+
                 // Filter out the current class
-                const newClasses = otherClassesData.filter(course => course._id !== id);
-                console.log(`After filtering current class, found ${newClasses.length} other classes`);
-                
+                const newClasses = otherClassesData.filter(
+                  (course) => course._id !== id
+                );
+                console.log(
+                  `After filtering current class, found ${newClasses.length} other classes`
+                );
+
                 // Add to our collection of all found classes
                 allFoundClasses = [...allFoundClasses, ...newClasses];
               } else {
-                console.error(`Error fetching classes for professor "${professorName}":`, otherClassesResponse.statusText);
+                console.error(
+                  `Error fetching classes for professor "${professorName}":`,
+                  otherClassesResponse.statusText
+                );
               }
             } catch (err) {
-              console.error(`Exception while fetching classes for "${professorName}":`, err);
+              console.error(
+                `Exception while fetching classes for "${professorName}":`,
+                err
+              );
             }
           }
 
           // Remove duplicates (in case a course has multiple professors from our list)
-          const uniqueClasses = allFoundClasses.filter((course, index, self) =>
-            index === self.findIndex((c) => c._id === course._id)
+          const uniqueClasses = allFoundClasses.filter(
+            (course, index, self) =>
+              index === self.findIndex((c) => c._id === course._id)
           );
-          
+
           // Limit to 3 classes
           const limitedClasses = uniqueClasses.slice(0, 3);
           console.log(`Final display: ${limitedClasses.length} classes`);
-          
+
           setOtherClasses(limitedClasses);
         }
       } catch (err) {
@@ -86,7 +106,9 @@ const ClassDetails = () => {
 
   const handleRedditSearch = () => {
     const searchQuery = `${classDetails.courseCode} ${classDetails.title}`;
-    const redditUrl = `https://www.reddit.com/r/Purdue/search?q=${encodeURIComponent(searchQuery)}&restrict_sr=1`;
+    const redditUrl = `https://www.reddit.com/r/Purdue/search?q=${encodeURIComponent(
+      searchQuery
+    )}&restrict_sr=1`;
     window.open(redditUrl, "_blank");
   };
 
@@ -95,27 +117,27 @@ const ClassDetails = () => {
       alert("No professor listed for this class.");
       return;
     }
-  
+
     const professorNames = classDetails.professor
       .split(",")
-      .map(name => name.trim())
-      .filter(name => name && name.toLowerCase() !== "staff");
-  
+      .map((name) => name.trim())
+      .filter((name) => name && name.toLowerCase() !== "staff");
+
     // Hardcoded map of professor name to RMP ID
     const knownProfessors = {
       "Sarah H Sellke": "1734941",
-      "Wojciech Szpankowski": "132647"
+      "Wojciech Szpankowski": "132647",
       // Add more here later if needed
     };
-  
+
     if (professorNames.length === 1) {
       const name = professorNames[0];
       const encodedName = encodeURIComponent(name);
-  
+
       const url = knownProfessors[name]
         ? `https://www.ratemyprofessors.com/professor/${knownProfessors[name]}`
         : `https://www.ratemyprofessors.com/search/professors/783?q=${encodedName}`;
-  
+
       window.open(url, "_blank");
     } else {
       // Show options if more than one professor
@@ -124,7 +146,7 @@ const ClassDetails = () => {
         const url = knownProfessors[name]
           ? `https://www.ratemyprofessors.com/professor/${knownProfessors[name]}`
           : `https://www.ratemyprofessors.com/search/professors/783?q=${encodedName}`;
-  
+
         return (
           <button
             key={index}
@@ -138,7 +160,7 @@ const ClassDetails = () => {
           </button>
         );
       });
-  
+
       setProfessorOptions(options);
     }
   };
@@ -171,7 +193,10 @@ const ClassDetails = () => {
   // Close professor options when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (professorOptionsRef.current && !professorOptionsRef.current.contains(event.target)) {
+      if (
+        professorOptionsRef.current &&
+        !professorOptionsRef.current.contains(event.target)
+      ) {
         setProfessorOptions(null);
       }
     };
@@ -183,11 +208,19 @@ const ClassDetails = () => {
   }, []);
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   if (!classDetails || errorMessage) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">{errorMessage || "Class not found."}</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {errorMessage || "Class not found."}
+      </div>
+    );
   }
 
   return (
@@ -196,24 +229,40 @@ const ClassDetails = () => {
         <h1 className="text-3xl font-bold text-yellow-700">
           {classDetails.courseCode}: {classDetails.title}
         </h1>
-        <p className="mt-2 text-gray-700">{classDetails.description || "No description available."}</p>
-        <p className="mt-2"><strong>Professor:</strong> {classDetails.professor || "Unknown"}</p>
-        <p className="mt-2"><strong>Credits:</strong> {classDetails.creditHours || "Unknown"}</p>
-        <p className="mt-2"><strong>Type:</strong> {classDetails.type || "Unknown"}</p>
+        <p className="mt-2 text-gray-700">
+          {classDetails.description || "No description available."}
+        </p>
+        <p className="mt-2">
+          <strong>Professor:</strong> {classDetails.professor || "Unknown"}
+        </p>
+        <p className="mt-2">
+          <strong>Credits:</strong> {classDetails.creditHours || "Unknown"}
+        </p>
+        <p className="mt-2">
+          <strong>Type:</strong> {classDetails.type || "Unknown"}
+        </p>
 
         {otherClasses.length > 0 ? (
           <div className="mt-6">
-            <h2 className="text-xl font-semibold text-gray-800">Other classes taught by these professors:</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Other classes taught by these professors:
+            </h2>
             <ul className="list-disc list-inside mt-2">
-              {otherClasses.map(course => (
-                <li key={course._id} className="text-blue-600 cursor-pointer hover:underline" onClick={() => navigate(`/class/${course._id}`)}>
+              {otherClasses.map((course) => (
+                <li
+                  key={course._id}
+                  className="text-blue-600 cursor-pointer hover:underline"
+                  onClick={() => navigate(`/class/${course._id}`)}
+                >
                   {course.courseCode}: {course.title}
                 </li>
               ))}
             </ul>
           </div>
         ) : (
-          <p className="mt-4 text-gray-500">No other classes found for these professors.</p>
+          <p className="mt-4 text-gray-500">
+            No other classes found for these professors.
+          </p>
         )}
 
         <button
@@ -239,10 +288,10 @@ const ClassDetails = () => {
 
         {professorOptions && (
           <div ref={professorOptionsRef} className="mt-4">
-            <h2 className="text-xl font-semibold text-gray-800">Select a professor:</h2>
-            <div className="flex flex-col mt-2">
-              {professorOptions}
-            </div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Select a professor:
+            </h2>
+            <div className="flex flex-col mt-2">{professorOptions}</div>
           </div>
         )}
       </div>
