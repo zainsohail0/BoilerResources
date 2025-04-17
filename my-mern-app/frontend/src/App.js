@@ -36,9 +36,9 @@ import FeedbackForm from "./components/FeedbackForm";
 // Content Reporting Components
 import ReportForm from "./components/ReportForm";
 import AdminReports from "./components/AdminReports";
-
 import CourseResources from "./components/CourseResources";
 import Bookmarks from "./components/Bookmarks";
+import TaskPlanner from "./components/TaskPlanner"; // ✅ New import
 
 const OAuthHandler = () => {
   const navigate = useNavigate();
@@ -114,6 +114,9 @@ function App() {
 
           {/* OAuth Handler */}
           <Route path="/oauth-callback" element={<OAuthHandler />} />
+
+          {/* ✅ Chat + Calendar + Planner Routes */}
+          <Route path="/planner" element={<TaskPlanner />} /> {/* ✅ New planner route */}
         </Routes>
       </Router>
     </ThemeProvider>

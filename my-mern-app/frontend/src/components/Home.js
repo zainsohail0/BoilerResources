@@ -31,6 +31,8 @@ const Home = () => {
       window.history.replaceState({}, document.title);
     }
   }, [shouldRefreshGroups]);
+  const handleGoToCalendar = () => navigate('/calendar');
+  const handleGoToPlanner = () => navigate('/planner'); // ✅ NEW
 
   useEffect(() => {
     // Load completed classes from localStorage
@@ -424,6 +426,7 @@ const Home = () => {
                 <>
                   <span className="text-white">Welcome, {user.username}!</span>
 
+
                   {/* Report Button */}
                   <button
                     onClick={handleReportContent}
@@ -433,11 +436,20 @@ const Home = () => {
                   </button>
 
                   {/* ✅ Calendar Button */}
+
+                  {/* ✅ Calendar + Planner Buttons */}
+
                   <button
                     onClick={handleGoToCalendar}
                     className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
                   >
                     View Calendar
+                  </button>
+                  <button
+                    onClick={handleGoToPlanner}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
+                  >
+                    View Planner
                   </button>
 
                   <ThemeToggle />
