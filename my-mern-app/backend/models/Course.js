@@ -1,61 +1,20 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
+import resourceSchema from "./schemas/resourceSchema.js";
 
-// Comment Schema for Resources
+/*// Comment Schema for Resources
 const commentSchema = new Schema({
   text: { type: String, required: true, trim: true },
   postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   datePosted: { type: Date, default: Date.now },
   upvotes: { type: Number, default: 0 },
   downvotes: { type: Number, default: 0 },
-});
+});*/
 
 // Resource Schema for Course Resources
-const resourceSchema = new Schema({
-  title: { type: String, required: true, trim: true },
-  type: {
-    type: String,
-    enum: ["pdf", "video", "link", "document", "other"],
-    default: "other",
-    required: true,
-  },
-  url: { type: String, required: true, trim: true },
-  description: { type: String, trim: true },
-  datePosted: { type: Date, default: Date.now },
-  upvotes: { type: Number, default: 0 },
-  downvotes: { type: Number, default: 0 },
-  // Track users who have voted and their vote type
-  voters: [
-    {
-      user: { type: Schema.Types.ObjectId, ref: "User" },
-      voteType: { type: String, enum: ["up", "down"] },
-    },
-  ],
-  comments: [commentSchema],
-  postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  fileType: {
-    type: String,
-    enum: [
-      ".jpg",
-      ".png",
-      ".gif",
-      ".doc",
-      ".docx",
-      ".pdf",
-      ".ppt",
-      ".pptx",
-      ".mp3",
-      ".wav",
-      ".mp4",
-      ".mov",
-    ],
-    default: null,
-  },
-  shareLink: { type: String, default: null },
-});
 
 // Add resourceSchema methods from completed-classes branch
-resourceSchema.methods.upvote = function (user) {
+/*resourceSchema.methods.upvote = function (user) {
   // Find if user has already voted
   const existingVoteIndex = this.voters.findIndex(
     (vote) => vote.user.toString() === user._id.toString()
@@ -153,7 +112,7 @@ resourceSchema.methods.getAttribute = function (name) {
 resourceSchema.methods.setAttribute = function (name, value) {
   // Set the attribute value based on the name
   this[name] = value;
-};
+};*/
 
 // Main Course Schema - Combined from both branches
 const courseSchema = new Schema(
@@ -206,7 +165,7 @@ const courseSchema = new Schema(
 
 // Create models
 const Course = mongoose.model("Course", courseSchema);
-const Resource = mongoose.model("Resource", resourceSchema);
+//const Resource = mongoose.model("Resource", resourceSchema);
 
-export { Course, Resource };
+export { Course };
 export default Course;

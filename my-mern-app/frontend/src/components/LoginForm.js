@@ -23,12 +23,12 @@ const LoginForm = () => {
           method: "GET",
           credentials: "include", // Ensures session is checked
         });
-  
+
         if (res.ok) {
           const data = await res.json();
           console.log("Session data:", data); // Debug log
           setIsAuthenticated(true);
-  
+
           // Only redirect if not already on /home
           if (window.location.pathname !== "/home") {
             navigate("/home");
@@ -38,7 +38,7 @@ const LoginForm = () => {
         console.error("Auth check failed:", err);
       }
     };
-  
+
     checkAuth();
   }, [navigate]);
 
@@ -46,7 +46,7 @@ const LoginForm = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const verified = query.get("verified");
-    
+
     if (verified === "true") {
       setSuccess("Email verified successfully! You can now log in.");
     }
@@ -79,7 +79,9 @@ const LoginForm = () => {
       } else if (data.requiresVerification) {
         setNeedsVerification(true);
       } else {
-        setError(data.message || "Login failed. Please check your credentials.");
+        setError(
+          data.message || "Login failed. Please check your credentials."
+        );
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -93,18 +95,23 @@ const LoginForm = () => {
     setIsSubmitting(true);
     setError("");
     setSuccess("");
-    
+
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/resend-verification", {
-        email,
-      });
-      
+      const response = await axios.post(
+        "http://localhost:5001/api/auth/resend-verification",
+        {
+          email,
+        }
+      );
+
       if (response.status === 200) {
         setSuccess("Verification email sent. Please check your inbox.");
       }
     } catch (err) {
       console.error("Resend verification error:", err);
-      setError(err.response?.data?.message || "Failed to resend verification email.");
+      setError(
+        err.response?.data?.message || "Failed to resend verification email."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -122,7 +129,11 @@ const LoginForm = () => {
     >
       {/* Top Bar */}
       <div
-        style={{ backgroundColor: "#000000", color: "#cfb991", fontFamily: "United Sans, sans-serif" }}
+        style={{
+          backgroundColor: "#000000",
+          color: "#cfb991",
+          fontFamily: "United Sans, sans-serif",
+        }}
         className="w-full py-4 text-center text-3xl font-bold"
       >
         Boiler Resources
@@ -217,7 +228,10 @@ const LoginForm = () => {
                   onChange={() => setRememberMe(!rememberMe)}
                   className="h-4 w-4 text-yellow-600 focus:ring-yellow-600 border-gray-300 rounded"
                 />
-                <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+                <label
+                  htmlFor="rememberMe"
+                  className="ml-2 text-sm text-gray-700"
+                >
                   Remember Me
                 </label>
               </div>
@@ -232,7 +246,7 @@ const LoginForm = () => {
 
             {/* Login Button */}
             <div className="w-full p-[1px] bg-gradient-to-r from-[#555960] via-[#6f727b] via-[#ddb945] to-[#8e6f3e] rounded-lg">
-              <button 
+              <button
                 type="submit"
                 className="w-full bg-white text-black py-2 rounded-lg"
                 disabled={isSubmitting}
@@ -251,16 +265,18 @@ const LoginForm = () => {
                 style={{ backgroundColor: "#cfb991" }}
                 disabled={isSubmitting}
               >
-                <FcGoogle className="text-2xl mr-2"/> Sign in with Google
+                <FcGoogle className="text-2xl mr-2" /> Sign in with Google
               </button>
             </div>
 
             {/* Back to Sign Up Button */}
             <div className="text-center mt-4">
-              <span className="text-sm text-gray-600">Don't have an account? </span>
+              <span className="text-sm text-gray-600">
+                Don't have an account?{" "}
+              </span>
               <button
                 type="button"
-                onClick={() => navigate("/")} 
+                onClick={() => navigate("/")}
                 className="text-sm text-blue-600 hover:underline focus:outline-none"
               >
                 Sign Up
