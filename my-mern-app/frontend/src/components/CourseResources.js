@@ -26,10 +26,22 @@ const CourseResources = () => {
   const [replyText, setReplyText] = useState("");
   const [commentSortOrder, setCommentSortOrder] = useState("newest");
 
+  // Filter states
+  const [resourceTypes, setResourceTypes] = useState([
+    "document",
+    "image",
+    "audio",
+    "video",
+  ]);
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [filteredResources, setFilteredResources] = useState([]);
+
   const fetchResources = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log("Fetching resources for course:", courseId);
+
       const res = await axios.get(
         `${API_URL}/api/resources/course/${courseId}?sortBy=${commentSortOrder}`,
         {
@@ -99,6 +111,7 @@ const CourseResources = () => {
         });
 
         setResources(processedResources);
+        setFilteredResources(processedResources); // Initialize filtered resources
       } else {
         console.error("Unexpected response format:", res.data);
         setError("Invalid response format from server");
@@ -115,12 +128,49 @@ const CourseResources = () => {
     }
   }, [courseId, commentSortOrder]);
 
-  // Add effect to handle sort order changes
+  // Apply filters when selectedTypes changes
   useEffect(() => {
-    if (courseId) {
-      fetchResources();
+    if (resources.length > 0) {
+      let filtered = [...resources];
+
+      // Apply type filter
+      if (selectedTypes.length > 0) {
+        filtered = filtered.filter((resource) =>
+          selectedTypes.includes(resource.type)
+        );
+      }
+
+      setFilteredResources(filtered);
     }
-  }, [commentSortOrder, courseId, fetchResources]);
+  }, [selectedTypes, resources]);
+
+  // Toggle filter selection
+  const toggleTypeFilter = (type) => {
+    const updatedTypes = selectedTypes.includes(type)
+      ? selectedTypes.filter((t) => t !== type)
+      : [...selectedTypes, type];
+
+    setSelectedTypes(updatedTypes);
+    localStorage.setItem("resourceFilterTypes", JSON.stringify(updatedTypes));
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+    localStorage.removeItem("resourceFilterTypes");
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = () => {
+    return selectedTypes.length > 0;
+  };
+
+  // Load saved filter preferences
+  useEffect(() => {
+    const savedTypes =
+      JSON.parse(localStorage.getItem("resourceFilterTypes")) || [];
+    setSelectedTypes(savedTypes);
+  }, []);
 
   // Check bookmark status for all resources
   useEffect(() => {
@@ -686,6 +736,49 @@ const CourseResources = () => {
 
         <h2 className="text-2xl font-bold mb-6">Course Resources</h2>
 
+        {/* Filter Section */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setFiltersVisible(!filtersVisible)}
+              className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+            >
+              {filtersVisible ? "Hide Filters" : "Show Filters"}
+            </button>
+            {hasActiveFilters() && (
+              <button
+                onClick={clearAllFilters}
+                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
+
+          {filtersVisible && (
+            <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">
+                Filter by Type
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {resourceTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => toggleTypeFilter(type)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      selectedTypes.includes(type)
+                        ? "bg-yellow-600 text-white"
+                        : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-between items-center mb-6">
           <button
             onClick={() => setShowUploadForm(true)}
@@ -797,9 +890,9 @@ const CourseResources = () => {
               Loading resources...
             </p>
           </div>
-        ) : resources.length > 0 ? (
+        ) : filteredResources.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resources.map((resource) => (
+            {filteredResources.map((resource) => (
               <div
                 key={resource._id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
@@ -942,7 +1035,9 @@ const CourseResources = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">
-              No resources have been uploaded yet.
+              {hasActiveFilters()
+                ? "No resources match the selected filters"
+                : "No resources have been uploaded yet."}
             </p>
           </div>
         )}
