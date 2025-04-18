@@ -11,6 +11,11 @@ const CourseResources = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [editResourceData, setEditResourceData] = useState({
+    title: "",
+    description: "",
+  });
   const [uploadData, setUploadData] = useState({
     title: "",
     description: "",
@@ -680,6 +685,34 @@ const CourseResources = () => {
     );
   };
 
+  const handleEditResource = async (resourceId, e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(
+        `${API_URL}/api/resources/${resourceId}`,
+        editResourceData,
+        { withCredentials: true }
+      );
+
+      // Update the resource in the state
+      setResources((prevResources) =>
+        prevResources.map((resource) =>
+          resource._id === resourceId ? response.data : resource
+        )
+      );
+      setFilteredResources((prevResources) =>
+        prevResources.map((resource) =>
+          resource._id === resourceId ? response.data : resource
+        )
+      );
+
+      setEditingResource(null);
+      setEditResourceData({ title: "", description: "" });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to edit resource");
+    }
+  };
+
   return (
     <div className="course-resources">
       <style jsx>{`
@@ -898,136 +931,223 @@ const CourseResources = () => {
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
               >
                 <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-sm font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                          {resource.type.charAt(0).toUpperCase() +
-                            resource.type.slice(1)}
-                        </span>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {resource.title}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-300 mb-4">
-                        {resource.description}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleBookmarkToggle(resource._id)}
-                      className="text-2xl hover:text-yellow-500 transition-colors"
-                      title={
-                        bookmarks[resource._id]
-                          ? "Remove from bookmarks"
-                          : "Add to bookmarks"
-                      }
-                    >
-                      {bookmarks[resource._id] ? "🔖" : "📑"}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Posted by {resource.postedBy?.username || "Unknown"}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(resource.datePosted).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex space-x-4">
-                      <button
-                        onClick={() => handleVote(resource._id, "upvote")}
-                        className="text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
-                      >
-                        👍 {resource.upvotes || 0}
-                      </button>
-                      <button
-                        onClick={() => handleVote(resource._id, "downvote")}
-                        className="text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                      >
-                        👎 {resource.downvotes || 0}
-                      </button>
-                    </div>
-                    <div className="flex space-x-2">
-                      {resource.type === "link" ? (
-                        <a
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-yellow-700 dark:bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
-                        >
-                          Visit Link
-                        </a>
-                      ) : (
-                        <a
-                          href={resource.url}
-                          download
-                          className="bg-yellow-700 dark:bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
-                        >
-                          Download
-                        </a>
-                      )}
-                      {user?._id === resource.postedBy?._id && (
-                        <button
-                          onClick={() => handleDelete(resource._id)}
-                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Comments Section */}
-                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Comments
-                      </h4>
-                      <select
-                        value={commentSortOrder}
-                        onChange={(e) => setCommentSortOrder(e.target.value)}
-                        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400"
-                      >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                      </select>
-                    </div>
-
-                    {/* Comment Form */}
-                    <form
-                      onSubmit={(e) => handleCommentSubmit(resource._id, e)}
-                      className="mb-4"
-                    >
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          placeholder="Add a comment..."
-                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
-                        <button
-                          type="submit"
-                          className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 transition"
-                        >
-                          Post
-                        </button>
+                  {editingResource === resource._id ? (
+                    <form onSubmit={(e) => handleEditResource(resource._id, e)}>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            value={editResourceData.title}
+                            onChange={(e) =>
+                              setEditResourceData({
+                                ...editResourceData,
+                                title: e.target.value,
+                              })
+                            }
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Description
+                          </label>
+                          <textarea
+                            value={editResourceData.description}
+                            onChange={(e) =>
+                              setEditResourceData({
+                                ...editResourceData,
+                                description: e.target.value,
+                              })
+                            }
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            rows="3"
+                            required
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingResource(null);
+                              setEditResourceData({
+                                title: "",
+                                description: "",
+                              });
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-600"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
                       </div>
                     </form>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-sm font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                              {resource.type.charAt(0).toUpperCase() +
+                                resource.type.slice(1)}
+                            </span>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {resource.title}
+                            </h3>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 mb-4">
+                            {resource.description}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleBookmarkToggle(resource._id)}
+                          className="text-2xl hover:text-yellow-500 transition-colors"
+                          title={
+                            bookmarks[resource._id]
+                              ? "Remove from bookmarks"
+                              : "Add to bookmarks"
+                          }
+                        >
+                          {bookmarks[resource._id] ? "🔖" : "📑"}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          Posted by {resource.postedBy?.username || "Unknown"}
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(resource.datePosted).toLocaleDateString()}
+                          {resource.lastEdited && (
+                            <span className="ml-2 text-xs text-gray-400">
+                              (edited)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex space-x-4">
+                          <button
+                            onClick={() => handleVote(resource._id, "upvote")}
+                            className="text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
+                          >
+                            👍 {resource.upvotes || 0}
+                          </button>
+                          <button
+                            onClick={() => handleVote(resource._id, "downvote")}
+                            className="text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                          >
+                            👎 {resource.downvotes || 0}
+                          </button>
+                        </div>
+                        <div className="flex space-x-2">
+                          {resource.type === "link" ? (
+                            <a
+                              href={resource.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-yellow-700 dark:bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
+                            >
+                              Visit Link
+                            </a>
+                          ) : (
+                            <a
+                              href={resource.url}
+                              download
+                              className="bg-yellow-700 dark:bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-800 dark:hover:bg-yellow-700 transition"
+                            >
+                              Download
+                            </a>
+                          )}
+                          {user?._id === resource.postedBy?._id && (
+                            <button
+                              onClick={() => handleDelete(resource._id)}
+                              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {user?._id === resource.postedBy?._id && (
+                        <div className="flex justify-end mt-4">
+                          <button
+                            onClick={() => {
+                              setEditingResource(resource._id);
+                              setEditResourceData({
+                                title: resource.title,
+                                description: resource.description,
+                              });
+                            }}
+                            className="text-sm text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
 
-                    {/* Comments List */}
-                    <div className="space-y-3">
-                      {resource.comments?.map((comment) => (
-                        <CommentItem
-                          key={comment._id}
-                          comment={comment}
-                          resourceId={resource._id}
-                          parentCommentId={null}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                      {/* Comments Section */}
+                      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Comments
+                          </h4>
+                          <select
+                            value={commentSortOrder}
+                            onChange={(e) =>
+                              setCommentSortOrder(e.target.value)
+                            }
+                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400"
+                          >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                          </select>
+                        </div>
+
+                        {/* Comment Form */}
+                        <form
+                          onSubmit={(e) => handleCommentSubmit(resource._id, e)}
+                          className="mb-4"
+                        >
+                          <div className="flex space-x-2">
+                            <input
+                              type="text"
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="Add a comment..."
+                              className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 transition"
+                            >
+                              Post
+                            </button>
+                          </div>
+                        </form>
+
+                        {/* Comments List */}
+                        <div className="space-y-3">
+                          {resource.comments?.map((comment) => (
+                            <CommentItem
+                              key={comment._id}
+                              comment={comment}
+                              resourceId={resource._id}
+                              parentCommentId={null}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

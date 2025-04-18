@@ -66,6 +66,7 @@ export const getCourseResources = async (req, res) => {
       courseId: courseObjectId,
     })
       .populate("postedBy", "username _id")
+      .populate("editHistory.editedBy", "username _id")
       .populate({
         path: "comments",
         populate: {
@@ -246,25 +247,79 @@ export const updateResource = async (req, res) => {
     const { resourceId } = req.params;
     const { title, description } = req.body;
 
+    // Check authentication
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        message: "Authentication required",
+        details: "You must be logged in to edit resources",
+      });
+    }
+
     const resource = await Resource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
 
+    // Check if the user is the author of the resource
     if (resource.postedBy.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this resource" });
+      return res.status(403).json({
+        message: "Not authorized to edit this resource",
+      });
     }
 
-    resource.title = title || resource.title;
-    resource.description = description || resource.description;
+    // Track changes
+    const changes = [];
+    if (title && title !== resource.title) {
+      changes.push(`title changed from "${resource.title}" to "${title}"`);
+      resource.title = title;
+    }
+    if (description && description !== resource.description) {
+      changes.push(
+        `description changed from "${resource.description}" to "${description}"`
+      );
+      resource.description = description;
+    }
 
-    await resource.save();
-    res.json(resource);
+    // Only update if there are changes
+    if (changes.length > 0) {
+      resource.lastEdited = new Date();
+      resource.editHistory = resource.editHistory || [];
+      resource.editHistory.push({
+        date: new Date(),
+        changes: changes,
+        editedBy: req.user._id,
+      });
+
+      await resource.save();
+    }
+
+    // Get the populated resource with author information
+    const populatedResource = await Resource.findById(resourceId)
+      .populate("postedBy", "username _id")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          model: "User",
+          select: "username _id",
+        },
+      });
+
+    res.json(populatedResource);
   } catch (error) {
     console.error("Error updating resource:", error);
-    res.status(500).json({ message: "Error updating resource" });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Validation error",
+        details: Object.values(error.errors)
+          .map((err) => err.message)
+          .join(", "),
+      });
+    }
+    res.status(500).json({
+      message: "Error updating resource",
+      details: error.message,
+    });
   }
 };
 

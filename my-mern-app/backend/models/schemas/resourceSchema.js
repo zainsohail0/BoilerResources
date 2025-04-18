@@ -68,6 +68,19 @@ const resourceSchema = new mongoose.Schema(
     shareLink: {
       type: String,
     },
+    lastEdited: {
+      type: Date,
+    },
+    editHistory: [
+      {
+        date: Date,
+        changes: [String],
+        editedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
   },
   { strict: false }
 );
