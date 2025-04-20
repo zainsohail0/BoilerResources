@@ -51,7 +51,7 @@ router.post("/", protect, async (req, res) => {
 });
 
 // Get all reports (admin only)
-router.get("/", protect, isAdmin, async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const { status, category, severity, page = 1, limit = 10 } = req.query;
 
