@@ -25,6 +25,7 @@ const CourseResources = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [commentSortOrder, setCommentSortOrder] = useState("newest");
+  const [copySuccess, setCopySuccess] = useState(null);
 
   const fetchResources = useCallback(async () => {
     try {
@@ -185,6 +186,14 @@ const CourseResources = () => {
       checkAuth();
     }
   }, [courseId, navigate, fetchResources]);
+
+  const handleShare = (resourceId) => {
+    const resourceLink = `${window.location.origin}/resources/${resourceId}`;
+    navigator.clipboard.writeText(resourceLink).then(() => {
+      setCopySuccess(resourceId); // Set the ID of the resource that was copied
+      setTimeout(() => setCopySuccess(null), 2000); // Clear the confirmation after 2 seconds
+    });
+  };
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -854,6 +863,17 @@ const CourseResources = () => {
                       >
                         👎 {resource.downvotes || 0}
                       </button>
+                      <button
+                        onClick={() => handleShare(resource._id)} // Share button
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+                      >
+                        Share
+                      </button>
+                      {copySuccess === resource._id && (
+                        <span className="text-green-500 text-sm">
+                          Link copied!
+                        </span>
+                      )}
                     </div>
                     <div className="flex space-x-2">
                       {resource.type === "link" ? (
