@@ -12,6 +12,8 @@ import {
   editComment,
   deleteComment,
   addReply,
+  voteComment,           // Add this import
+  getCommentVoteStatus,  // Add this import
 } from "../controllers/resourceController.js";
 import { Resource } from "../models/index.js";
 
@@ -51,5 +53,11 @@ router.delete("/:resourceId/comments/:commentId", protect, deleteComment);
 
 // Add a reply to a comment
 router.post("/:resourceId/comments/:commentId/reply", protect, addReply);
+
+// Vote on a comment
+router.post("/:resourceId/comments/:commentId/vote", protect, voteComment);
+
+// Get comment vote status
+router.get("/:resourceId/comments/:commentId/vote-status", protect, getCommentVoteStatus);
 
 export default router;
