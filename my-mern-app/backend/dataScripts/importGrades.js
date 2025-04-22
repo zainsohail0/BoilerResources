@@ -9,23 +9,22 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from ../.env
+// Load environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });
-
 console.log("MONGODB_URI loaded:", process.env.MONGODB_URI);
 
 // MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log("MongoDB connected successfully");
+    console.log("✅ MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection failed:", error);
+    console.error("❌ MongoDB connection failed:", error);
     process.exit(1);
   }
 };
 
-// GPA conversion map
+// GPA mapping
 const gradeToGPA = {
   "A+": 4.0, A: 4.0, "A-": 3.7,
   "B+": 3.3, B: 3.0, "B-": 2.7,
@@ -34,20 +33,20 @@ const gradeToGPA = {
   F: 0.0,
 };
 
-// GPA calculator
+// GPA calculator (normalized)
 const calculateAvgGPA = (grades) => {
   let total = 0;
   let count = 0;
   for (const [grade, pct] of Object.entries(grades)) {
-    if (gradeToGPA[grade] !== undefined && pct) {
-      total += gradeToGPA[grade] * parseFloat(pct);
-      count += parseFloat(pct);
+    if (gradeToGPA[grade] !== undefined && pct > 0) {
+      total += gradeToGPA[grade] * (pct / 100);  // normalize %
+      count += pct / 100;
     }
   }
   return count > 0 ? (total / count).toFixed(2) : null;
 };
 
-// Grade distribution schema
+// GradeDistribution schema
 const gradeDistributionSchema = new mongoose.Schema({
   subjectCode: String,
   courseCode: String,
@@ -73,26 +72,16 @@ const importGradeDistributions = async () => {
     await connectDB();
 
     const filePath = path.join(__dirname, "grades.xlsx");
-    console.log(`Reading grade data from: ${filePath}`);
+    console.log(`📖 Reading grade data from: ${filePath}`);
 
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-    // Skip top 8 rows, start at row 9 (index 8)
     const data = xlsx.utils.sheet_to_json(sheet, { defval: "", range: 8 });
 
     if (!data.length) {
-      console.warn("No data found in Excel file.");
+      console.warn("⚠️ No data found in Excel file.");
       return;
     }
-
-    console.log("\nAvailable headers in first data row:");
-    for (const key of Object.keys(data[0])) {
-      console.log(`- "${key}"`);
-    }
-
-    console.log("\nFirst data row preview:");
-    console.log(data[0]);
 
     const gradeKeys = [
       "A", "A-", "A+", "AU", "B", "B-", "B+", "C", "C-", "C+",
@@ -106,39 +95,57 @@ const importGradeDistributions = async () => {
       const crn = parseInt(crnRaw);
 
       if (!crnRaw || isNaN(crn)) {
-        console.warn(`Skipping row - invalid CRN: "${crnRaw}" for course "${row["Title"]}"`);
+        console.warn(`Skipping row: invalid CRN "${crnRaw}" for "${row["Title"]}"`);
+        continue;
+      }
+
+      if (!row["Subject"] || !row["Course Number"] || !row["Title"]) {
+        console.warn("Skipping row: missing subject/course/title");
         continue;
       }
 
       const grades = {};
       for (const key of gradeKeys) {
-        grades[key] = row[key] ? parseFloat(row[key]) : 0;
+        const raw = row[key]?.toString().trim();
+        let val = 0;
+
+        if (raw && raw.endsWith("%")) {
+          val = parseFloat(raw.replace("%", ""));
+        } else if (!isNaN(parseFloat(raw))) {
+          val = parseFloat(raw);
+        }
+
+        grades[key] = !isNaN(val) ? val : 0;
+
+        if (isNaN(val) && raw !== "" && raw !== undefined) {
+          console.warn(`⚠️ Invalid grade value "${raw}" for grade "${key}"`);
+        }
       }
 
       const doc = new GradeDistribution({
-        subjectCode: row["Subject"]?.trim(),
-        courseCode: row["Course Number"]?.toString(),
-        title: row["Title"]?.trim(),
-        academicPeriod: row["Academic Period Desc"]?.trim(),
-        section: row["Section"]?.toString(),
+        subjectCode: row["Subject"].trim(),
+        courseCode: row["Course Number"].toString(),
+        title: row["Title"].trim(),
+        academicPeriod: row["Academic Period Desc"]?.trim() || "",
+        section: row["Section"]?.toString() || "",
         crn,
-        instructor: row["Instructor"]?.trim(),
+        instructor: row["Instructor"]?.trim() || "",
         grades,
         avgGrade: calculateAvgGPA(grades),
       });
 
-      console.log(`Parsed: ${doc.subjectCode} ${doc.courseCode} | Section ${doc.section} | CRN ${crn}`);
+      console.log(`✅ Parsed: ${doc.subjectCode} ${doc.courseCode} | GPA: ${doc.avgGrade} | CRN ${crn}`);
       docs.push(doc);
     }
 
     if (docs.length === 0) {
-      console.warn("No valid grade distributions found to import.");
+      console.warn("⚠️ No valid documents to import.");
     } else {
       await GradeDistribution.insertMany(docs);
-      console.log(`Successfully imported ${docs.length} grade distributions`);
+      console.log(`🎉 Successfully imported ${docs.length} grade distributions.`);
     }
   } catch (err) {
-    console.error("Error importing grade data:", err);
+    console.error("❌ Error importing grade data:", err);
   } finally {
     mongoose.connection.close();
   }

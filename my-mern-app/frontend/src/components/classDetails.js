@@ -1,19 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
+import * as React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const API_URL = "http://localhost:5001";
 
 const ClassDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [classDetails, setClassDetails] = useState(null);
-  const [otherClasses, setOtherClasses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [professorOptions, setProfessorOptions] = useState(null);
-  const professorOptionsRef = useRef(null);
+  const [classDetails, setClassDetails] = React.useState(null);
+  const [otherClasses, setOtherClasses] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [professorOptions, setProfessorOptions] = React.useState(null);
+  const professorOptionsRef = React.useRef(null);
 
-  useEffect(() => {
+  const [gradeData, setGradeData] = React.useState([]);
+  const [avgGPA, setAvgGPA] = React.useState(null);
+
+  React.useEffect(() => {
     if (!id) {
       setErrorMessage("Class ID is missing.");
       setIsLoading(false);
@@ -31,66 +42,66 @@ const ClassDetails = () => {
         const data = await response.json();
         setClassDetails(data);
 
-        // Fetch other classes taught by any of the professors (limit 3)
+        // Hardcoded grade data
+        const hardcodedData = [
+          {
+            section: "001",
+            instructor: "Dr. Testerson",
+            avgGrade: "2.85",
+            grades: {
+              A: 12, "A-": 9, "A+": 4, B: 21, "B-": 18, "B+": 8,
+              C: 10, "C-": 2, "C+": 3, D: 1, F: 0,
+            },
+          },
+          {
+            section: "002",
+            instructor: "Prof. Example",
+            avgGrade: "3.12",
+            grades: {
+              A: 20, "A-": 11, "A+": 6, B: 19, "B-": 15, "B+": 10,
+              C: 4, "C-": 2, "C+": 1, D: 0, F: 0,
+            },
+          },
+        ];
+
+        setGradeData(hardcodedData);
+        const gpas = hardcodedData.map((d) => parseFloat(d.avgGrade));
+        const avg = gpas.reduce((a, b) => a + b, 0) / gpas.length;
+        setAvgGPA(avg.toFixed(2));
+
+        // Other classes by professor
         if (data.professor) {
           const professorNames = data.professor
             .split(",")
             .map((name) => name.trim());
-          let allFoundClasses = []; // Store ALL found classes here
+          let allFoundClasses = [];
 
           for (const professorName of professorNames) {
-            console.log(`Fetching classes for professor: "${professorName}"`);
-
             try {
               const otherClassesResponse = await fetch(
                 `${API_URL}/api/courses/professor/${encodeURIComponent(
                   professorName
                 )}`,
-                {
-                  credentials: "include",
-                }
+                { credentials: "include" }
               );
 
               if (otherClassesResponse.ok) {
                 const otherClassesData = await otherClassesResponse.json();
-                console.log(
-                  `Found ${otherClassesData.length} classes for ${professorName}`
-                );
-
-                // Filter out the current class
                 const newClasses = otherClassesData.filter(
                   (course) => course._id !== id
                 );
-                console.log(
-                  `After filtering current class, found ${newClasses.length} other classes`
-                );
-
-                // Add to our collection of all found classes
                 allFoundClasses = [...allFoundClasses, ...newClasses];
-              } else {
-                console.error(
-                  `Error fetching classes for professor "${professorName}":`,
-                  otherClassesResponse.statusText
-                );
               }
             } catch (err) {
-              console.error(
-                `Exception while fetching classes for "${professorName}":`,
-                err
-              );
+              console.error(`Error fetching classes for "${professorName}":`, err);
             }
           }
 
-          // Remove duplicates (in case a course has multiple professors from our list)
           const uniqueClasses = allFoundClasses.filter(
             (course, index, self) =>
               index === self.findIndex((c) => c._id === course._id)
           );
-
-          // Limit to 3 classes
           const limitedClasses = uniqueClasses.slice(0, 3);
-          console.log(`Final display: ${limitedClasses.length} classes`);
-
           setOtherClasses(limitedClasses);
         }
       } catch (err) {
@@ -123,24 +134,19 @@ const ClassDetails = () => {
       .map((name) => name.trim())
       .filter((name) => name && name.toLowerCase() !== "staff");
 
-    // Hardcoded map of professor name to RMP ID
     const knownProfessors = {
       "Sarah H Sellke": "1734941",
       "Wojciech Szpankowski": "132647",
-      // Add more here later if needed
     };
 
     if (professorNames.length === 1) {
       const name = professorNames[0];
       const encodedName = encodeURIComponent(name);
-
       const url = knownProfessors[name]
         ? `https://www.ratemyprofessors.com/professor/${knownProfessors[name]}`
         : `https://www.ratemyprofessors.com/search/professors/783?q=${encodedName}`;
-
       window.open(url, "_blank");
     } else {
-      // Show options if more than one professor
       const options = professorNames.map((name, index) => {
         const encodedName = encodeURIComponent(name);
         const url = knownProfessors[name]
@@ -165,33 +171,7 @@ const ClassDetails = () => {
     }
   };
 
-  // const handleRateMyProfessorSearch = () => {
-  //   const professorNames = classDetails.professor.split(",").map(name => name.trim());
-  //   if (professorNames.length === 1) {
-  //     const searchQuery = professorNames[0];
-  //     const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/783?q=${encodeURIComponent(searchQuery)}`;
-  //     window.open(rateMyProfessorUrl, "_blank");
-  //   } else {
-  //     const professorOptions = professorNames.map((name, index) => (
-  //       <button
-  //         key={index}
-  //         onClick={() => {
-  //           const searchQuery = name;
-  //           const rateMyProfessorUrl = `https://www.ratemyprofessors.com/search/professors/783?q=${encodeURIComponent(searchQuery)}`;
-  //           window.open(rateMyProfessorUrl, "_blank");
-  //           setProfessorOptions(null); // Close the options after clicking
-  //         }}
-  //         className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-  //       >
-  //         {name}
-  //       </button>
-  //     ));
-  //     setProfessorOptions(professorOptions);
-  //   }
-  // };
-
-  // Close professor options when clicking outside
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         professorOptionsRef.current &&
@@ -265,26 +245,26 @@ const ClassDetails = () => {
           </p>
         )}
 
-        <button
-          onClick={() => navigate(-1)}
-          className="mt-4 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-        >
-          Back
-        </button>
-
-        <button
-          onClick={handleRedditSearch}
-          className="mt-4 ml-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
-        >
-          Find on Reddit
-        </button>
-
-        <button
-          onClick={handleRateMyProfessorSearch}
-          className="mt-4 ml-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
-        >
-          RateMyProfessor
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          >
+            Back
+          </button>
+          <button
+            onClick={handleRedditSearch}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+          >
+            Find on Reddit
+          </button>
+          <button
+            onClick={handleRateMyProfessorSearch}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+          >
+            RateMyProfessor
+          </button>
+        </div>
 
         {professorOptions && (
           <div ref={professorOptionsRef} className="mt-4">
@@ -295,6 +275,42 @@ const ClassDetails = () => {
           </div>
         )}
       </div>
+
+      {gradeData.length > 0 && (
+        <div className="mt-8 bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-2xl font-semibold text-yellow-700 mb-2">Grade Distributions</h2>
+
+          {avgGPA && (
+            <p className="mb-4 text-gray-700">
+              <strong>Average GPA across sections:</strong> {avgGPA}
+            </p>
+          )}
+
+          {gradeData.map((section, idx) => {
+            const chartData = Object.entries(section.grades)
+              .filter(([_, count]) => count > 0)
+              .map(([grade, count]) => ({ grade, count }));
+
+            return (
+              <div key={idx} className="mb-6">
+                <h3 className="font-medium text-gray-800 mb-2">
+                  Section {section.section} — {section.instructor}
+                </h3>
+                <div style={{ width: "100%", height: 300 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={chartData}>
+                      <XAxis dataKey="grade" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
