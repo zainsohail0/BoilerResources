@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import { BellIcon } from "@heroicons/react/24/outline";
 
 const API_URL = "http://localhost:5001";
 const MIN_CREDIT_HOURS = 12;
@@ -24,6 +25,119 @@ const Home = () => {
 
   const handleReportContent = () => navigate("/report");
   const handleAdminReports = () => navigate("/admin/reports");
+
+  const [notifications, setNotifications] = useState([]);
+const [unreadNotifications, setUnreadNotifications] = useState([]);
+const [notificationsOpen, setNotificationsOpen] = useState(false);
+const notificationRef = useRef(null);
+
+// Format date helper function
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  
+  // If today, show time
+  if (date.toDateString() === now.toDateString()) {
+    return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  
+  // If yesterday, show "Yesterday"
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  
+  // Otherwise show date
+  return date.toLocaleDateString([], { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// Toggle notifications
+const toggleNotifications = () => {
+  if (!notificationsOpen && unreadNotifications.length > 0) {
+    // Mark all as read
+    markAllAsRead();
+  }
+  setNotificationsOpen(!notificationsOpen);
+};
+
+// Mark all notifications as read
+const markAllAsRead = async () => {
+  try {
+    await fetch(`${API_URL}/api/notifications/read-all`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Update local state
+    setNotifications(prevNotifications => 
+      prevNotifications.map(notification => ({ ...notification, read: true }))
+    );
+    setUnreadNotifications([]);
+  } catch (err) {
+    console.error('Failed to mark notifications as read:', err);
+  }
+};
+
+// Clear all notifications
+const clearAllNotifications = async () => {
+  try {
+    await fetch(`${API_URL}/api/notifications/clear-all`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    
+    // Update local state
+    setNotifications([]);
+    setUnreadNotifications([]);
+    setNotificationsOpen(false);
+  } catch (err) {
+    console.error('Failed to clear notifications:', err);
+  }
+};
+
+// Click outside to close notifications
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+      setNotificationsOpen(false);
+    }
+  };
+  
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, [notificationRef]);
+
+// Fetch notifications
+const fetchNotifications = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/notifications`, {
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setNotifications(data);
+      
+      // Filter unread notifications
+      const unread = data.filter(notification => !notification.read);
+      setUnreadNotifications(unread);
+    }
+  } catch (err) {
+    console.error('Error fetching notifications:', err);
+  }
+};
 
   useEffect(() => {
     // Clear the location state to prevent refreshing on future navigations
@@ -103,6 +217,17 @@ const Home = () => {
 
     // No auto-refresh intervals
   }, [navigate, shouldRefreshGroups, newGroupId]);
+
+  useEffect(() => {
+    if (user && user._id) {
+      fetchNotifications();
+      
+      // Set up polling for new notifications (every 30 seconds)
+      const intervalId = setInterval(fetchNotifications, 30000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [user]);
 
   const fetchUserClasses = async (userId) => {
     try {
@@ -450,6 +575,91 @@ const Home = () => {
                   >
                     View Planner
                   </button>
+
+                  <div className="relative">
+                    <button
+                      onClick={toggleNotifications}
+                      className="text-white relative p-2 rounded-full hover:bg-yellow-600 transition"
+                    >
+                      <BellIcon className="h-6 w-6" />
+                      {unreadNotifications.length > 0 && (
+                        <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {unreadNotifications.length}
+                        </div>
+                      )}
+                    </button>
+
+                    {notificationsOpen && (
+                      <div
+                        ref={notificationRef}
+                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-md shadow-lg py-2 z-30"
+                      >
+                        <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Notifications
+                          </h3>
+                        </div>
+
+                        {notifications.length > 0 ? (
+                          <>
+                            <div className="max-h-80 overflow-y-auto">
+                              {notifications.map((notification) => (
+                                <div
+                                  key={notification._id}
+                                  className={`px-4 py-3 border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                                    !notification.read
+                                      ? "bg-blue-50 dark:bg-blue-900/20"
+                                      : ""
+                                  }`}
+                                >
+                                  <div className="flex items-start">
+                                    <div
+                                      className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
+                                        notification.type === "report"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : notification.type === "success"
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-blue-100 text-blue-800"
+                                      }`}
+                                    >
+                                      {notification.type === "report"
+                                        ? "📋"
+                                        : notification.type === "success"
+                                        ? "✅"
+                                        : "ℹ️"}
+                                    </div>
+                                    <div className="ml-3 w-full">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {notification.title}
+                                      </p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        {notification.message}
+                                      </p>
+                                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                        {formatDate(notification.createdAt)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600">
+                              <button
+                                onClick={clearAllNotifications}
+                                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                            No notifications
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   <ThemeToggle />
 

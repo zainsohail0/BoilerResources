@@ -25,6 +25,7 @@ import reportRoutes from "./routes/reportRoutes.js"; // Added report routes
 import plannerRoutes from "./routes/planner.js"; // ✅ Added planner route
 import chatSocketHandler from "./chatSocket.js";
 import "./config/passport.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 dotenv.config();
 
@@ -75,6 +76,9 @@ app.use("/api/resources", resourceRoutes); // ✅ Added resource routes
 app.use("/api/bookmarks", bookmarkRoutes);
 
 app.use("/api/reports", reportRoutes); // Added report routes
+app.use("/api/notifications", notificationRoutes);
+
+
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "🚀 Server is running..." });

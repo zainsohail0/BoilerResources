@@ -139,27 +139,31 @@ const AdminReports = () => {
 
   const handleSubmitAction = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      // Show loading state or indicator if needed
+      
       const res = await fetch(`${API_URL}/api/reports/${selectedReport._id}`, {
         method: "PATCH",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify(actionData),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to update report");
+  
+      const responseText = await res.text();
+      
+      // Try to parse as JSON, but keep text if it fails
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response as JSON:", responseText);
+        throw new Error("Invalid response from server: " + responseText);
       }
-
-      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update report");
+      }
       
       if (data.success) {
         // Update the report in the list
