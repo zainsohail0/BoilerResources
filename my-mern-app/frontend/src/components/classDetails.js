@@ -13,6 +13,10 @@ const ClassDetails = () => {
   const [professorOptions, setProfessorOptions] = useState(null);
   const professorOptionsRef = useRef(null);
   
+  // Section state
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState("all");
+  
   // Grade distribution state
   const [gradeData, setGradeData] = useState([]);
   const [averageGrade, setAverageGrade] = useState('');
@@ -56,33 +60,123 @@ const ClassDetails = () => {
     return 'F';
   }, []);
 
-  // Use useCallback to memoize the function so it doesn't change on every render
-  const generateRandomGradeDistribution = useCallback(() => {
+  // Generate random grade distribution with specific target average
+  const generateDistributionWithAverage = useCallback((targetGrade) => {
     // Start with empty counts
     let counts = Array(gradeLetters.length).fill(0);
+    let targetValue = 0;
     
-    // Generate 100 "student grades" with distribution favoring B+ (index 3)
-    for (let i = 0; i < 100; i++) {
-      // Generate random number with bias toward B+ (centered distribution)
-      let randomValue = Math.floor(Math.random() * 100);
-      let gradeIndex;
-      
-      // Map the random value to grade indices with B+ having highest probability
-      if (randomValue < 3) gradeIndex = 0; // A+ (3%)
-      else if (randomValue < 10) gradeIndex = 1; // A (7%)
-      else if (randomValue < 20) gradeIndex = 2; // A- (10%)
-      else if (randomValue < 45) gradeIndex = 3; // B+ (25%) - Highest probability
-      else if (randomValue < 60) gradeIndex = 4; // B (15%)
-      else if (randomValue < 70) gradeIndex = 5; // B- (10%)
-      else if (randomValue < 77) gradeIndex = 6; // C+ (7%)
-      else if (randomValue < 84) gradeIndex = 7; // C (7%)
-      else if (randomValue < 90) gradeIndex = 8; // C- (6%)
-      else if (randomValue < 94) gradeIndex = 9; // D+ (4%)
-      else if (randomValue < 97) gradeIndex = 10; // D (3%)
-      else if (randomValue < 99) gradeIndex = 11; // D- (2%)
-      else gradeIndex = 12; // F (1%)
-      
-      counts[gradeIndex]++;
+    // Map target grade to numerical value
+    switch(targetGrade) {
+      case 'A':
+        targetValue = 4.0;
+        break;
+      case 'A-':
+        targetValue = 3.7;
+        break;
+      case 'B+':
+        targetValue = 3.3;
+        break;
+      case 'B':
+        targetValue = 3.0;
+        break;
+      case 'B-':
+        targetValue = 2.7;
+        break;
+      case 'C+':
+        targetValue = 2.3;
+        break;
+      default:
+        targetValue = 3.3; // Default to B+
+    }
+    
+    // Set distribution base on target grade
+    if (targetGrade === 'A' || targetGrade === 'A-') {
+      // Higher distribution for A's
+      for (let i = 0; i < 100; i++) {
+        let randomValue = Math.floor(Math.random() * 100);
+        let gradeIndex;
+        
+        if (randomValue < 10) gradeIndex = 0; // A+ (10%)
+        else if (randomValue < 30) gradeIndex = 1; // A (20%)
+        else if (randomValue < 45) gradeIndex = 2; // A- (15%)
+        else if (randomValue < 60) gradeIndex = 3; // B+ (15%)
+        else if (randomValue < 75) gradeIndex = 4; // B (15%)
+        else if (randomValue < 85) gradeIndex = 5; // B- (10%)
+        else if (randomValue < 90) gradeIndex = 6; // C+ (5%)
+        else if (randomValue < 95) gradeIndex = 7; // C (5%)
+        else if (randomValue < 97) gradeIndex = 8; // C- (2%)
+        else if (randomValue < 99) gradeIndex = 9; // D+ (2%)
+        else gradeIndex = 12; // F (1%)
+        
+        counts[gradeIndex]++;
+      }
+    } else if (targetGrade === 'B+') {
+      // B+ centered distribution
+      for (let i = 0; i < 100; i++) {
+        let randomValue = Math.floor(Math.random() * 100);
+        let gradeIndex;
+        
+        if (randomValue < 3) gradeIndex = 0; // A+ (3%)
+        else if (randomValue < 10) gradeIndex = 1; // A (7%)
+        else if (randomValue < 20) gradeIndex = 2; // A- (10%)
+        else if (randomValue < 45) gradeIndex = 3; // B+ (25%)
+        else if (randomValue < 60) gradeIndex = 4; // B (15%)
+        else if (randomValue < 70) gradeIndex = 5; // B- (10%)
+        else if (randomValue < 77) gradeIndex = 6; // C+ (7%)
+        else if (randomValue < 84) gradeIndex = 7; // C (7%)
+        else if (randomValue < 90) gradeIndex = 8; // C- (6%)
+        else if (randomValue < 94) gradeIndex = 9; // D+ (4%)
+        else if (randomValue < 97) gradeIndex = 10; // D (3%)
+        else if (randomValue < 99) gradeIndex = 11; // D- (2%)
+        else gradeIndex = 12; // F (1%)
+        
+        counts[gradeIndex]++;
+      }
+    } else if (targetGrade === 'B' || targetGrade === 'B-') {
+      // B centered distribution
+      for (let i = 0; i < 100; i++) {
+        let randomValue = Math.floor(Math.random() * 100);
+        let gradeIndex;
+        
+        if (randomValue < 2) gradeIndex = 0; // A+ (2%)
+        else if (randomValue < 7) gradeIndex = 1; // A (5%)
+        else if (randomValue < 15) gradeIndex = 2; // A- (8%)
+        else if (randomValue < 28) gradeIndex = 3; // B+ (13%)
+        else if (randomValue < 48) gradeIndex = 4; // B (20%)
+        else if (randomValue < 63) gradeIndex = 5; // B- (15%)
+        else if (randomValue < 73) gradeIndex = 6; // C+ (10%)
+        else if (randomValue < 83) gradeIndex = 7; // C (10%)
+        else if (randomValue < 90) gradeIndex = 8; // C- (7%)
+        else if (randomValue < 94) gradeIndex = 9; // D+ (4%)
+        else if (randomValue < 97) gradeIndex = 10; // D (3%)
+        else if (randomValue < 99) gradeIndex = 11; // D- (2%)
+        else gradeIndex = 12; // F (1%)
+        
+        counts[gradeIndex]++;
+      }
+    } else {
+      // C+ centered distribution
+      for (let i = 0; i < 100; i++) {
+        let randomValue = Math.floor(Math.random() * 100);
+        let gradeIndex;
+        
+        if (randomValue < 1) gradeIndex = 0; // A+ (1%)
+        else if (randomValue < 3) gradeIndex = 1; // A (2%)
+        else if (randomValue < 8) gradeIndex = 2; // A- (5%)
+        else if (randomValue < 15) gradeIndex = 3; // B+ (7%)
+        else if (randomValue < 25) gradeIndex = 4; // B (10%)
+        else if (randomValue < 35) gradeIndex = 5; // B- (10%)
+        else if (randomValue < 60) gradeIndex = 6; // C+ (25%)
+        else if (randomValue < 75) gradeIndex = 7; // C (15%)
+        else if (randomValue < 85) gradeIndex = 8; // C- (10%)
+        else if (randomValue < 90) gradeIndex = 9; // D+ (5%)
+        else if (randomValue < 95) gradeIndex = 10; // D (5%)
+        else if (randomValue < 98) gradeIndex = 11; // D- (3%)
+        else gradeIndex = 12; // F (2%)
+        
+        counts[gradeIndex]++;
+      }
     }
     
     // Create the data object for chart
@@ -104,66 +198,93 @@ const ClassDetails = () => {
     const avgGradeValue = totalPoints / totalStudents;
     const calculatedGrade = getLetterGrade(avgGradeValue);
     
-    // In case the random distribution didn't result in B+, force it
-    if (calculatedGrade !== 'B+') {
-      // Adjust some values to ensure B+ average
-      // This is a fallback and should rarely be needed
-      const targetValue = 3.3; // B+ value
-      const currentValue = avgGradeValue;
-      
-      // Find how far off we are
-      const difference = targetValue - currentValue;
-      
-      // Make small adjustments to counts until we're close enough
-      if (difference > 0) {
-        // Need to increase average (add more higher grades)
-        let adjustments = 0;
-        while (adjustments < 10) { // Limit adjustments
-          const lowerIndex = Math.floor(Math.random() * 6) + 7; // C through D-
-          const higherIndex = Math.floor(Math.random() * 3) + 1; // A through A-
-          
-          if (data[lowerIndex].students > 0) {
-            data[lowerIndex].students--;
-            data[higherIndex].students++;
-            adjustments++;
-          }
-        }
-      } else if (difference < 0) {
-        // Need to decrease average (add more lower grades)
-        let adjustments = 0;
-        while (adjustments < 10) { // Limit adjustments
-          const higherIndex = Math.floor(Math.random() * 3); // A+ through A-
-          const lowerIndex = Math.floor(Math.random() * 3) + 6; // C+ through C-
-          
-          if (data[higherIndex].students > 0) {
-            data[higherIndex].students--;
-            data[lowerIndex].students++;
-            adjustments++;
-          }
-        }
-      }
-      
-      // Recalculate averages
-      totalPoints = 0;
-      totalStudents = 0;
-      
-      data.forEach(item => {
-        totalPoints += gradeValues[item.grade] * item.students;
-        totalStudents += item.students;
-      });
-      
-      const newAvgValue = totalPoints / totalStudents;
-      const newCalculatedGrade = getLetterGrade(newAvgValue);
-      
-      // Set the adjusted data and grade
-      setGradeData(data);
-      setAverageGrade(newCalculatedGrade); 
-    } else {
-      // Original calculation already resulted in B+
-      setGradeData(data);
-      setAverageGrade(calculatedGrade);
-    }
+    return {
+      data,
+      averageGrade: calculatedGrade
+    };
   }, [gradeLetters, getGradeColor, getLetterGrade, gradeValues]);
+
+  // Generate random section data
+  const generateSectionData = useCallback(() => {
+    // Create 3 sections with different distributions
+    const section1 = {
+      id: "1",
+      name: "Section 001",
+      professor: "Prof. Johnson",
+      time: "MWF 9:30am - 10:20am",
+      ...generateDistributionWithAverage('A-')
+    };
+    
+    const section2 = {
+      id: "2",
+      name: "Section 002",
+      professor: "Prof. Smith",
+      time: "TR 1:30pm - 2:45pm",
+      ...generateDistributionWithAverage('B+')
+    };
+    
+    const section3 = {
+      id: "3",
+      name: "Section 003",
+      professor: "Prof. Williams",
+      time: "MWF 2:30pm - 3:20pm",
+      ...generateDistributionWithAverage('B')
+    };
+    
+    // Generate overall data (combined sections)
+    const combinedData = [];
+    const sections = [section1, section2, section3];
+    
+    // Initialize combined data with zeros
+    gradeLetters.forEach((grade) => {
+      combinedData.push({
+        grade,
+        students: 0,
+        fill: getGradeColor(grade)
+      });
+    });
+    
+    // Sum up students for each grade across all sections
+    sections.forEach(section => {
+      section.data.forEach((item, index) => {
+        combinedData[index].students += item.students;
+      });
+    });
+    
+    // Calculate combined average
+    let totalPoints = 0;
+    let totalStudents = 0;
+    
+    combinedData.forEach(item => {
+      totalPoints += gradeValues[item.grade] * item.students;
+      totalStudents += item.students;
+    });
+    
+    const avgGradeValue = totalPoints / totalStudents;
+    const calculatedGrade = getLetterGrade(avgGradeValue);
+    
+    // Add combined data as "All Sections"
+    const allSections = {
+      id: "all",
+      name: "All Sections",
+      data: combinedData,
+      averageGrade: calculatedGrade
+    };
+    
+    return [allSections, ...sections];
+  }, [generateDistributionWithAverage, gradeLetters, getGradeColor, gradeValues, getLetterGrade]);
+
+  // Handle section change
+  const handleSectionChange = useCallback((sectionId) => {
+    setSelectedSection(sectionId);
+    
+    // Find selected section
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      setGradeData(section.data);
+      setAverageGrade(section.averageGrade);
+    }
+  }, [sections]);
 
   useEffect(() => {
     if (!id) {
@@ -183,8 +304,13 @@ const ClassDetails = () => {
         const data = await response.json();
         setClassDetails(data);
 
-        // Generate random grade distribution when class data is loaded
-        generateRandomGradeDistribution();
+        // Generate section data
+        const sectionData = generateSectionData();
+        setSections(sectionData);
+        
+        // Set default to "All Sections"
+        setGradeData(sectionData[0].data);
+        setAverageGrade(sectionData[0].averageGrade);
 
         // Fetch other classes taught by any of the professors (limit 3)
         if (data.professor) {
@@ -257,7 +383,7 @@ const ClassDetails = () => {
     };
 
     fetchClassDetails();
-  }, [id, generateRandomGradeDistribution]); // Now this dependency is stable
+  }, [id, generateSectionData]);
 
   // Close professor options when clicking outside
   useEffect(() => {
@@ -381,6 +507,25 @@ const ClassDetails = () => {
             Grade Distribution
           </h2>
           
+          {/* Section Selector */}
+          <div className="mt-4 mb-6">
+            <label htmlFor="sectionSelect" className="block text-sm font-medium text-gray-700 mb-1">
+              Select Section:
+            </label>
+            <select
+              id="sectionSelect"
+              value={selectedSection}
+              onChange={(e) => handleSectionChange(e.target.value)}
+              className="block w-full max-w-md py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              {sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.name} {section.professor ? `- ${section.professor}` : ''} {section.time ? `(${section.time})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           <div className="flex items-center my-4">
             <span className="font-semibold mr-2">Average Grade:</span>
             <span 
@@ -419,7 +564,7 @@ const ClassDetails = () => {
           </div>
           
           <p className="text-sm text-gray-500 italic">
-            This chart shows the historical grade distribution for this course across all sections.
+            This chart shows the historical grade distribution for this course across {selectedSection === "all" ? "all sections" : "the selected section"}.
           </p>
         </div>
 
