@@ -26,13 +26,15 @@ const CourseResources = () => {
   const [replyText, setReplyText] = useState("");
   const [commentSortOrder, setCommentSortOrder] = useState("newest");
   const [copySuccess, setCopySuccess] = useState(null);
+  const [resourceSortOrder, setResourceSortOrder] = useState("newest");
 
   const fetchResources = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log("Fetching resources for course:", courseId);
       const res = await axios.get(
-        `${API_URL}/api/resources/course/${courseId}?sortBy=${commentSortOrder}`,
+        `${API_URL}/api/resources/course/${courseId}?sortBy=${resourceSortOrder}`,
+        //`${API_URL}/api/resources/course/${courseId}?sortBy=${commentSortOrder}`,
         {
           withCredentials: true,
         }
@@ -114,14 +116,16 @@ const CourseResources = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [courseId, commentSortOrder]);
+  }, [courseId, resourceSortOrder]);
+  //[courseId, commentSortOrder]);
 
   // Add effect to handle sort order changes
   useEffect(() => {
     if (courseId) {
       fetchResources();
     }
-  }, [commentSortOrder, courseId, fetchResources]);
+  }, [resourceSortOrder, courseId, fetchResources]);
+  //[commentSortOrder, courseId, fetchResources]);
 
   // Check bookmark status for all resources
   useEffect(() => {
@@ -692,7 +696,7 @@ const CourseResources = () => {
             <span>View My Bookmarks</span>
           </button>
         </div>
-
+        
         <h2 className="text-2xl font-bold mb-6">Course Resources</h2>
 
         <div className="flex justify-between items-center mb-6">
@@ -703,6 +707,21 @@ const CourseResources = () => {
           >
             {isLoading ? "Loading..." : "Upload New Resource"}
           </button>
+          <div className="flex justify-end mb-4">
+              <label htmlFor="resource-sort" className="mr-2 font-medium text-sm text-gray-700 dark:text-gray-300">
+                Sort Resources By:
+              </label>
+              <select
+                id="resource-sort"
+                value={resourceSortOrder}
+                onChange={(e) => setResourceSortOrder(e.target.value)}
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="mostVoted">Most Voted</option>
+              </select>
+            </div>
         </div>
 
         {error && (
@@ -807,6 +826,7 @@ const CourseResources = () => {
             </p>
           </div>
         ) : resources.length > 0 ? (
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {resources.map((resource) => (
               <div

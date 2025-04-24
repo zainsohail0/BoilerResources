@@ -47,6 +47,63 @@ export const upload = multer({
 export const getCourseResources = async (req, res) => {
   try {
     const { courseId } = req.params;
+    const { sortBy = "newest" } = req.query;
+
+    if (!courseId) {
+      return res.status(400).json({ message: "Course ID is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({ message: "Invalid course ID format" });
+    }
+
+    const courseObjectId = new mongoose.Types.ObjectId(courseId);
+
+    const course = await Course.findById(courseObjectId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Fetch all resources for the course
+    let resources = await Resource.find({ courseId: courseObjectId })
+      .populate("postedBy", "username _id")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          model: "User",
+          select: "username _id",
+        },
+      });
+
+    // Sort based on query
+    if (sortBy === "mostVoted") {
+      resources = resources
+        .map((r) => ({
+          ...r.toObject(),
+          netVotes: (r.upvotes || 0) - (r.downvotes || 0),
+        }))
+        .sort((a, b) => b.netVotes - a.netVotes || new Date(b.datePosted) - new Date(a.datePosted));
+    } else if (sortBy === "oldest") {
+      resources = resources.sort(
+        (a, b) => new Date(a.datePosted) - new Date(b.datePosted)
+      );
+    } else {
+      resources = resources.sort(
+        (a, b) => new Date(b.datePosted) - new Date(a.datePosted)
+      );
+    }
+
+    res.json(resources);
+  } catch (error) {
+    console.error("Error fetching resources:", error);
+    res.status(500).json({ message: "Error fetching resources" });
+  }
+};
+/*
+export const getCourseResources = async (req, res) => {
+  try {
+    const { courseId } = req.params;
 
     if (!courseId) {
       return res.status(400).json({ message: "Course ID is required" });
@@ -83,6 +140,7 @@ export const getCourseResources = async (req, res) => {
     res.status(500).json({ message: "Error fetching resources" });
   }
 };
+*/
 
 // Upload a new resource
 export const uploadResource = async (req, res) => {

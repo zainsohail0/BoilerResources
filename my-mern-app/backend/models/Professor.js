@@ -36,6 +36,10 @@ const professorSchema = new mongoose.Schema(
         ref: "Course", // Reference to Course model
       },
     ],
+    rmpID: {
+      type: String,
+      default: "",
+    },
     rating: {
       type: Number,
       default: 0,
