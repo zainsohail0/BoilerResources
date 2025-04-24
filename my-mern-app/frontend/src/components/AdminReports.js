@@ -37,30 +37,44 @@ const AdminReports = () => {
         page: pagination.page,
         limit: pagination.limit,
       });
-
+  
       if (filters.status) queryParams.append("status", filters.status);
       if (filters.category) queryParams.append("category", filters.category);
       if (filters.severity) queryParams.append("severity", filters.severity);
-
+  
       const token = localStorage.getItem("token");
       const headers = {
         "Content-Type": "application/json",
       };
-
+  
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-
+  
+      // Debug: Log the full URL and headers
+      console.log("Fetching reports from:", `${API_URL}/api/reports?${queryParams.toString()}`);
+      console.log("Headers:", headers);
+  
       const res = await fetch(`${API_URL}/api/reports?${queryParams.toString()}`, {
         headers,
         credentials: "include",
       });
-
+  
+      // Debug: Log response status and content type
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+  
       if (!res.ok) {
-        throw new Error("Failed to fetch reports");
+        // Get more information about the error
+        const errorText = await res.text();
+        console.error("API Error response:", errorText);
+        throw new Error(`Failed to fetch reports: ${res.status} ${res.statusText}`);
       }
-
+  
       const data = await res.json();
+      
+      // Debug: Log the response data
+      console.log("API Response data:", data);
       
       if (data.success) {
         setReports(data.data.reports);
@@ -125,27 +139,31 @@ const AdminReports = () => {
 
   const handleSubmitAction = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      // Show loading state or indicator if needed
+      
       const res = await fetch(`${API_URL}/api/reports/${selectedReport._id}`, {
         method: "PATCH",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify(actionData),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to update report");
+  
+      const responseText = await res.text();
+      
+      // Try to parse as JSON, but keep text if it fails
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response as JSON:", responseText);
+        throw new Error("Invalid response from server: " + responseText);
       }
-
-      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update report");
+      }
       
       if (data.success) {
         // Update the report in the list

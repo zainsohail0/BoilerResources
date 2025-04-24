@@ -42,6 +42,115 @@ const CourseResources = () => {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [filteredResources, setFilteredResources] = useState([]);
 
+  // Add these to your state variables in CourseResources.js
+const [commentVotes, setCommentVotes] = useState({});
+
+// Add a function to fetch comment vote statuses
+const fetchCommentVoteStatuses = async (resourceComments) => {
+  try {
+    const voteStatuses = {};
+    for (const comment of resourceComments) {
+      // Find which resource this comment belongs to
+      const resourceWithComment = resources.find(resource => 
+        resource.comments && resource.comments.some(c => c._id === comment._id)
+      );
+      
+      if (!resourceWithComment) continue;
+      
+      // Fetch status for top-level comments
+      const response = await axios.get(
+        `${API_URL}/api/resources/${resourceWithComment._id}/comments/${comment._id}/vote-status`,
+        { withCredentials: true }
+      );
+      voteStatuses[comment._id] = response.data.voteStatus;
+      
+      // Fetch status for replies if they exist
+      if (comment.replies && comment.replies.length > 0) {
+        for (const reply of comment.replies) {
+          const replyResponse = await axios.get(
+            `${API_URL}/api/resources/${resourceWithComment._id}/comments/${reply._id}/vote-status`,
+            { withCredentials: true }
+          );
+          voteStatuses[reply._id] = replyResponse.data.voteStatus;
+        }
+      }
+    }
+    setCommentVotes(voteStatuses);
+  } catch (err) {
+    console.error("Error fetching comment vote statuses:", err);
+  }
+};
+
+// Call this after fetching resources
+useEffect(() => {
+  if (resources.length > 0) {
+    const allComments = resources.flatMap(resource => 
+      resource.comments ? resource.comments : []
+    );
+    if (allComments.length > 0) {
+      fetchCommentVoteStatuses(allComments);
+    }
+  }
+}, [resources]);
+
+// Add a function for handling comment votes
+const handleCommentVote = async (resourceId, commentId, voteType) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/api/resources/${resourceId}/comments/${commentId}/vote`,
+      { voteType },
+      { withCredentials: true }
+    );
+    
+    // Update the comment's vote count in the state
+    setResources(prevResources => 
+      prevResources.map(resource => {
+        if (resource._id === resourceId) {
+          return {
+            ...resource,
+            comments: updateCommentWithVote(resource.comments, commentId, response.data.comment)
+          };
+        }
+        return resource;
+      })
+    );
+    
+    // Update the user's vote status for this comment
+    setCommentVotes(prev => ({
+      ...prev,
+      [commentId]: response.data.comment.userVoteType
+    }));
+  } catch (err) {
+    console.error("Error voting on comment:", err);
+    setError(err.response?.data?.message || "Vote failed");
+  }
+};
+
+// Helper function to update a comment in the nested structure
+const updateCommentWithVote = (comments, commentId, updatedComment) => {
+  return comments.map(comment => {
+    if (comment._id === commentId) {
+      return {
+        ...comment,
+        upvotes: updatedComment.upvotes,
+        downvotes: updatedComment.downvotes
+      };
+    } else if (comment.replies && comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: comment.replies.map(reply => 
+          reply._id === commentId
+            ? { ...reply, upvotes: updatedComment.upvotes, downvotes: updatedComment.downvotes }
+            : reply
+        )
+      };
+    }
+    return comment;
+  });
+};
+
+
+
   const fetchResources = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -89,22 +198,41 @@ const CourseResources = () => {
 
           // Sort top-level comments
           const sortedTopLevelComments = [...topLevelComments].sort((a, b) => {
-            const dateA = new Date(a.datePosted);
-            const dateB = new Date(b.datePosted);
-            return commentSortOrder === "newest"
-              ? dateB - dateA
-              : dateA - dateB;
+            if (commentSortOrder === "newest") {
+              const dateA = new Date(a.datePosted);
+              const dateB = new Date(b.datePosted);
+              return dateB - dateA;
+            } else if (commentSortOrder === "oldest") {
+              const dateA = new Date(a.datePosted);
+              const dateB = new Date(b.datePosted);
+              return dateA - dateB;
+            } else if (commentSortOrder === "mostVotes") {
+              // Calculate net votes (upvotes - downvotes)
+              const netVotesA = (a.upvotes || 0) - (a.downvotes || 0);
+              const netVotesB = (b.upvotes || 0) - (b.downvotes || 0);
+              return netVotesB - netVotesA;
+            }
+            return 0;
           });
 
           // Sort replies for each comment
           sortedTopLevelComments.forEach((comment) => {
             if (comment.replies && comment.replies.length > 0) {
               comment.replies.sort((a, b) => {
-                const dateA = new Date(a.datePosted);
-                const dateB = new Date(b.datePosted);
-                return commentSortOrder === "newest"
-                  ? dateB - dateA
-                  : dateA - dateB;
+                if (commentSortOrder === "newest") {
+                  const dateA = new Date(a.datePosted);
+                  const dateB = new Date(b.datePosted);
+                  return dateB - dateA;
+                } else if (commentSortOrder === "oldest") {
+                  const dateA = new Date(a.datePosted);
+                  const dateB = new Date(b.datePosted);
+                  return dateA - dateB;
+                } else if (commentSortOrder === "mostVotes") {
+                  const netVotesA = (a.upvotes || 0) - (a.downvotes || 0);
+                  const netVotesB = (b.upvotes || 0) - (b.downvotes || 0);
+                  return netVotesB - netVotesA;
+                }
+                return 0;
               });
             }
           });
@@ -534,6 +662,7 @@ const CourseResources = () => {
     const isReply = !!parentCommentId;
     const isEditing = editingComment === comment._id;
     const isReplying = replyingTo === comment._id;
+    const userVoteType = commentVotes[comment._id] || null;
 
     return (
       <div
@@ -628,9 +757,37 @@ const CourseResources = () => {
             </div>
           </form>
         ) : (
+          <>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {comment.content}
           </p>
+
+          {/* Vote controls */}
+          <div className="flex items-center mt-2 space-x-4">
+            <button
+              onClick={() => handleCommentVote(resourceId, comment._id, "upvote")}
+              className={`text-xs flex items-center ${
+                userVoteType === "upvote" 
+                  ? "text-green-500 dark:text-green-400" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
+              }`}
+            >
+              <span className="mr-1">👍</span>
+              <span>{comment.upvotes || 0}</span>
+            </button>
+            <button
+              onClick={() => handleCommentVote(resourceId, comment._id, "downvote")}
+              className={`text-xs flex items-center ${
+                userVoteType === "downvote" 
+                  ? "text-red-500 dark:text-red-400" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+              }`}
+            >
+              <span className="mr-1">👎</span>
+              <span>{comment.downvotes || 0}</span>
+            </button>
+          </div>
+          </>
         )}
 
         {isReplying && (
@@ -1109,6 +1266,7 @@ const CourseResources = () => {
                           >
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
+                            <option value="mostVotes">Most Votes</option>
                           </select>
                         </div>
 

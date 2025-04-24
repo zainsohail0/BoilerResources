@@ -1,4 +1,4 @@
-import { Resource, Course, Comment } from "../models/index.js";
+import { Resource, Course, Comment, CommentVote } from "../models/index.js";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
@@ -586,5 +586,130 @@ export const addReply = async (req, res) => {
       message: "Error adding reply",
       details: error.message,
     });
+  }
+};
+
+// Add these functions to your resourceController.js file
+
+// Vote on a comment
+export const voteComment = async (req, res) => {
+  try {
+    const { resourceId, commentId } = req.params;
+    const { voteType } = req.body;
+    const userId = req.user._id;
+
+    if (!['upvote', 'downvote'].includes(voteType)) {
+      return res.status(400).json({ message: 'Invalid vote type' });
+    }
+
+    // Find the resource to verify it exists
+    const resource = await Resource.findById(resourceId);
+    if (!resource) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
+    // Find the comment directly
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    // Ensure upvotes and downvotes properties exist
+    if (comment.upvotes === undefined) comment.upvotes = 0;
+    if (comment.downvotes === undefined) comment.downvotes = 0;
+
+    // Find existing vote by this user on this comment
+    const existingVote = await CommentVote.findOne({
+      user: userId,
+      comment: commentId
+    });
+
+    let result = { action: "", type: "" };
+
+    if (existingVote) {
+      // User has already voted on this comment
+      if (existingVote.type === voteType) {
+        // Remove the vote if clicking the same button
+        await CommentVote.deleteOne({ _id: existingVote._id });
+        
+        if (voteType === 'upvote') {
+          comment.upvotes = Math.max(0, comment.upvotes - 1);
+        } else {
+          comment.downvotes = Math.max(0, comment.downvotes - 1);
+        }
+        
+        result = { action: "removed", type: voteType };
+      } else {
+        // Change vote from upvote to downvote or vice versa
+        existingVote.type = voteType;
+        await existingVote.save();
+        
+        if (voteType === 'upvote') {
+          comment.upvotes += 1;
+          comment.downvotes = Math.max(0, comment.downvotes - 1);
+        } else {
+          comment.downvotes += 1;
+          comment.upvotes = Math.max(0, comment.upvotes - 1);
+        }
+        
+        result = { action: "changed", type: voteType };
+      }
+    } else {
+      // Create a new vote
+      await CommentVote.create({
+        user: userId,
+        comment: commentId,
+        type: voteType
+      });
+      
+      if (voteType === 'upvote') {
+        comment.upvotes += 1;
+      } else {
+        comment.downvotes += 1;
+      }
+      
+      result = { action: "added", type: voteType };
+    }
+
+    // Save the updated comment
+    await comment.save();
+    
+    // Get user's current vote status
+    const userVote = await CommentVote.findOne({
+      user: userId,
+      comment: commentId
+    });
+
+    // Return the updated comment with user vote info
+    res.status(200).json({
+      message: `Vote ${result.action} successfully`,
+      comment: {
+        ...comment.toObject(),
+        userVoteType: userVote ? userVote.type : null
+      }
+    });
+  } catch (error) {
+    console.error('Error voting on comment:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get comment vote status
+export const getCommentVoteStatus = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user._id;
+    
+    const vote = await CommentVote.findOne({
+      user: userId,
+      comment: commentId
+    });
+    
+    res.status(200).json({
+      voteStatus: vote ? vote.type : null
+    });
+  } catch (error) {
+    console.error('Error getting comment vote status:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
