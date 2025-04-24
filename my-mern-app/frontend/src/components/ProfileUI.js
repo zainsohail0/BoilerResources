@@ -13,6 +13,7 @@ const ProfileUI = () => {
     grade: "",
     major: "",
     profileImage: "",
+    notificationPreferences: {},
   });
   const [originalProfile, setOriginalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
@@ -523,6 +524,36 @@ const ProfileUI = () => {
                       <p className="text-red-500 dark:text-red-400 text-xs mt-1">
                         {errors.college}
                       </p>
+                    )}
+                  </div>
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-2">Notification Preferences</h3>
+                    {user?.enrolledCourses?.length ? (
+                      user.enrolledCourses.map((cls) => (
+                        <div key={cls._id} className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            id={`notif-${cls._id}`}
+                            checked={profile.notificationPreferences?.[cls._id] || false}
+                            onChange={(e) =>
+                              setProfile((prev) => ({
+                                ...prev,
+                                notificationPreferences: {
+                                  ...prev.notificationPreferences,
+                                  [cls._id]: e.target.checked,
+                                },
+                              }))
+                            }
+                            disabled={!isEditing}
+                            className="mr-2"
+                          />
+                          <label htmlFor={`notif-${cls._id}`}>
+                            {cls.title} ({cls.courseCode})
+                          </label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No enrolled classes found.</p>
                     )}
                   </div>
                 </div>

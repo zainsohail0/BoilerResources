@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    notificationPreferences: {
+      type: Map,
+      of: Boolean, // key: classId, value: true/false
+      default: {}
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields automatically
