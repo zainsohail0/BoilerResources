@@ -2,6 +2,7 @@ import express from "express";
 import Report from "../models/Report.js";
 //import { isAuthenticated } from "../routes/auth.js";
 //import { isAuthenticated } from "jsonwebtoken";
+import Notification from "../models/Notification.js";
 
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 
@@ -35,6 +36,15 @@ router.post("/", protect, async (req, res) => {
 
     // TODO: Send notification to admins (implement in a separate feature)
 
+    const notification = new Notification({
+      userId: req.user._id,
+      title: "Report Submitted",
+      message: "Thank you for your report. It has been received and will be reviewed by our team.",
+      type: "report",
+    });
+    
+    await notification.save();
+
     res.status(201).json({
       success: true,
       message: "Report submitted successfully",
@@ -51,7 +61,7 @@ router.post("/", protect, async (req, res) => {
 });
 
 // Get all reports (admin only)
-router.get("/", protect, isAdmin, async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const { status, category, severity, page = 1, limit = 10 } = req.query;
 
@@ -153,20 +163,41 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Update report status (admin only)
-router.patch("/:id", protect, isAdmin, async (req, res) => {
+// Update report status (removed isAdmin middleware)
+router.patch("/:id", protect, async (req, res) => {
   try {
     const { status, adminNotes, actionTaken } = req.body;
+    
+    // Add validation for required fields
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Status is required",
+      });
+    }
 
+    // Find the report first to verify it exists
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    // Update the report
     const updatedReport = await Report.findByIdAndUpdate(
       req.params.id,
       {
         status,
-        adminNotes,
-        actionTaken,
+        adminNotes: adminNotes || '',
+        actionTaken: actionTaken || 'none',
         resolvedBy: status === "resolved" ? req.user._id : undefined,
+        updatedAt: new Date()
       },
-      { new: true }
-    );
+      { new: true, runValidators: true }
+    ).populate("reporterId", "username email")
+     .populate("resolvedBy", "username email");
 
     if (!updatedReport) {
       return res.status(404).json({
@@ -175,7 +206,17 @@ router.patch("/:id", protect, isAdmin, async (req, res) => {
       });
     }
 
-    // TODO: Send notification to the reporter when status changes
+    // Add notification to the reporter when report status changes
+    if (report.status !== status) {
+      const notification = new Notification({
+        userId: report.reporterId,
+        title: `Report ${status === "resolved" ? "Resolved" : status === "dismissed" ? "Dismissed" : "Under Review"}`,
+        message: `Your report has been ${status === "resolved" ? "resolved" : status === "dismissed" ? "dismissed" : "updated to under review"}.`,
+        type: "info",
+      });
+      
+      await notification.save();
+    }
 
     res.status(200).json({
       success: true,
