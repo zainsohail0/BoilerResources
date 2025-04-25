@@ -221,12 +221,23 @@ export const uploadResource = async (req, res) => {
       },
     });
 
-    // Email configuration
+    /*
     const emailHTML = (userName) => `
-      <h2>New Resource for ${course.title}</h2>
+      <h2>Boiler Resources | New Resource for ${course.title}</h2>
       <p><strong>${savedResource.title}</strong> has just been added.</p>
       <p>${savedResource.description}</p>
       <a href="http://localhost:3000/courses/${course._id}">
+        Click here to view the resource
+      </a>
+    `;
+    */
+
+    // Email configuration
+    const emailHTML = (userName) => `
+      <h2>Boiler Resources | New Resource for ${course.title}</h2>
+      <p><strong>${savedResource.title}</strong> has just been added.</p>
+      <p>${savedResource.description}</p>
+      <a href="https://asset.cloudinary.com/dzdup5eix/8e8a8a73b3e262ac7a1fdbe753d500d6">
         Click here to view the resource
       </a>
     `;

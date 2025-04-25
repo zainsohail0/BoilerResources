@@ -191,6 +191,21 @@ const CourseResources = () => {
     }
   }, [courseId, navigate, fetchResources]);
 
+  const handleShare = (resource) => {
+    if (!resource.url) {
+      console.error("No URL found for resource:", resource);
+      return;
+    }
+  
+    navigator.clipboard.writeText(resource.url).then(() => {
+      setCopySuccess(resource._id);
+      setTimeout(() => setCopySuccess(null), 2000);
+    }).catch((err) => {
+      console.error("Failed to copy link:", err);
+    });
+  };
+
+  /*
   const handleShare = (resourceId) => {
     const resourceLink = `${window.location.origin}/resources/${resourceId}`;
     navigator.clipboard.writeText(resourceLink).then(() => {
@@ -198,6 +213,7 @@ const CourseResources = () => {
       setTimeout(() => setCopySuccess(null), 2000); // Clear the confirmation after 2 seconds
     });
   };
+  */
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -872,19 +888,28 @@ const CourseResources = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex space-x-4">
                       <button
-                        onClick={() => handleVote(resource._id, "upvote")}
+                        //onClick={() => handleVote(resource._id, "upvote")}
+                        onClick={() => {
+                          console.log("Upvote clicked for resource:", resource._id);
+                          handleVote(resource._id, "upvote")}
+                        }
                         className="text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
                       >
                         👍 {resource.upvotes || 0}
                       </button>
                       <button
-                        onClick={() => handleVote(resource._id, "downvote")}
+                        onClick={() => {
+                          console.log("Downvote clicked for resource:", resource._id);
+                          handleVote(resource._id, "downvote")}
+                        }
+                        //onClick={() => handleVote(resource._id, "downvote")}
                         className="text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                       >
                         👎 {resource.downvotes || 0}
                       </button>
                       <button
-                        onClick={() => handleShare(resource._id)} // Share button
+                        onClick={() => handleShare(resource)}
+                        //onClick={() => handleShare(resource._id)} // Share button
                         className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
                       >
                         Share
