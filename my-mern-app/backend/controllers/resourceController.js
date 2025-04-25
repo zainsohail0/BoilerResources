@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import mongoose from "mongoose";
+import Vote from "../models/Vote.js";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -46,6 +47,67 @@ export const upload = multer({
 export const getCourseResources = async (req, res) => {
   try {
     const { courseId } = req.params;
+    const { sortBy = "newest" } = req.query;
+
+    if (!courseId) {
+      return res.status(400).json({ message: "Course ID is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({ message: "Invalid course ID format" });
+    }
+
+    const courseObjectId = new mongoose.Types.ObjectId(courseId);
+
+    const course = await Course.findById(courseObjectId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Fetch all resources for the course
+    let resources = await Resource.find({ courseId: courseObjectId })
+      .populate("postedBy", "username _id")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          model: "User",
+          select: "username _id",
+        },
+      });
+
+    // Sort based on query
+    if (sortBy === "mostVoted") {
+      resources = resources
+        .map((r) => ({
+          ...r.toObject(),
+          netVotes: (r.upvotes || 0) - (r.downvotes || 0),
+        }))
+        .sort(
+          (a, b) =>
+            b.netVotes - a.netVotes ||
+            new Date(b.datePosted) - new Date(a.datePosted)
+        );
+    } else if (sortBy === "oldest") {
+      resources = resources.sort(
+        (a, b) => new Date(a.datePosted) - new Date(b.datePosted)
+      );
+    } else {
+      resources = resources.sort(
+        (a, b) => new Date(b.datePosted) - new Date(a.datePosted)
+      );
+    }
+
+    res.json(resources);
+  } catch (error) {
+    console.error("Error fetching resources:", error);
+    res.status(500).json({ message: "Error fetching resources" });
+  }
+};
+/*
+export const getCourseResources = async (req, res) => {
+  try {
+    const { courseId } = req.params;
 
     if (!courseId) {
       return res.status(400).json({ message: "Course ID is required" });
@@ -83,6 +145,7 @@ export const getCourseResources = async (req, res) => {
     res.status(500).json({ message: "Error fetching resources" });
   }
 };
+*/
 
 // Upload a new resource
 export const uploadResource = async (req, res) => {
@@ -324,29 +387,115 @@ export const updateResource = async (req, res) => {
 };
 
 // Vote on a resource
+// Modified vote function for resourceController.js
 export const vote = async (req, res) => {
   try {
     const { resourceId } = req.params;
     const { voteType } = req.body;
+    const userId = req.user._id;
+
+    console.log("Vote request received:", {
+      resourceId,
+      userId,
+      voteType,
+      user: req.user,
+    });
+
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return res.status(400).json({ message: "Invalid vote type" });
+    }
 
     const resource = await Resource.findById(resourceId);
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
 
-    if (voteType === "upvote") {
-      resource.upvotes += 1;
-    } else if (voteType === "downvote") {
-      resource.downvotes += 1;
+    // Here's the key fix - use the correct field names in the Vote model
+    // We need to match the 'user' and 'resource' field names in your schema
+    const existingVote = await Vote.findOne({
+      user: userId,
+      resource: resourceId,
+    });
+
+    let action;
+
+    if (existingVote) {
+      if (existingVote.voteType === voteType) {
+        // Remove vote if clicking the same button again
+        await Vote.deleteOne({ _id: existingVote._id });
+        action = "removed";
+      } else {
+        // Change vote type
+        existingVote.voteType = voteType;
+        await existingVote.save();
+        action = "changed";
+      }
+    } else {
+      // Create new vote with correct field names
+      await Vote.create({
+        user: userId,
+        resource: resourceId,
+        voteType,
+      });
+      action = "added";
     }
 
+    // Recalculate vote counts
+    const upvotes = await Vote.countDocuments({
+      resource: resourceId,
+      voteType: "upvote",
+    });
+
+    const downvotes = await Vote.countDocuments({
+      resource: resourceId,
+      voteType: "downvote",
+    });
+
+    // Update the resource
+    resource.upvotes = upvotes;
+    resource.downvotes = downvotes;
     await resource.save();
-    res.json(resource);
-  } catch (error) {
-    console.error("Error voting on resource:", error);
-    res.status(500).json({ message: "Error voting on resource" });
+
+    res.status(200).json({
+      success: true,
+      resource,
+      message: `Vote ${action}`,
+      voteType,
+      action,
+    });
+  } catch (err) {
+    console.error("Error processing vote:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process vote",
+      error: err.message,
+    });
   }
 };
+
+// export const vote = async (req, res) => {
+//   try {
+//     const { resourceId } = req.params;
+//     const { voteType } = req.body;
+
+//     const resource = await Resource.findById(resourceId);
+//     if (!resource) {
+//       return res.status(404).json({ message: "Resource not found" });
+//     }
+
+//     if (voteType === "upvote") {
+//       resource.upvotes += 1;
+//     } else if (voteType === "downvote") {
+//       resource.downvotes += 1;
+//     }
+
+//     await resource.save();
+//     res.json(resource);
+//   } catch (error) {
+//     console.error("Error voting on resource:", error);
+//     res.status(500).json({ message: "Error voting on resource" });
+//   }
+// };
 
 // Create a test resource
 /*export const createTestResource = async (req, res) => {
@@ -598,20 +747,20 @@ export const voteComment = async (req, res) => {
     const { voteType } = req.body;
     const userId = req.user._id;
 
-    if (!['upvote', 'downvote'].includes(voteType)) {
-      return res.status(400).json({ message: 'Invalid vote type' });
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return res.status(400).json({ message: "Invalid vote type" });
     }
 
     // Find the resource to verify it exists
     const resource = await Resource.findById(resourceId);
     if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
+      return res.status(404).json({ message: "Resource not found" });
     }
 
     // Find the comment directly
     const comment = await Comment.findById(commentId);
     if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
+      return res.status(404).json({ message: "Comment not found" });
     }
 
     // Ensure upvotes and downvotes properties exist
@@ -621,7 +770,7 @@ export const voteComment = async (req, res) => {
     // Find existing vote by this user on this comment
     const existingVote = await CommentVote.findOne({
       user: userId,
-      comment: commentId
+      comment: commentId,
     });
 
     let result = { action: "", type: "" };
@@ -631,27 +780,27 @@ export const voteComment = async (req, res) => {
       if (existingVote.type === voteType) {
         // Remove the vote if clicking the same button
         await CommentVote.deleteOne({ _id: existingVote._id });
-        
-        if (voteType === 'upvote') {
+
+        if (voteType === "upvote") {
           comment.upvotes = Math.max(0, comment.upvotes - 1);
         } else {
           comment.downvotes = Math.max(0, comment.downvotes - 1);
         }
-        
+
         result = { action: "removed", type: voteType };
       } else {
         // Change vote from upvote to downvote or vice versa
         existingVote.type = voteType;
         await existingVote.save();
-        
-        if (voteType === 'upvote') {
+
+        if (voteType === "upvote") {
           comment.upvotes += 1;
           comment.downvotes = Math.max(0, comment.downvotes - 1);
         } else {
           comment.downvotes += 1;
           comment.upvotes = Math.max(0, comment.upvotes - 1);
         }
-        
+
         result = { action: "changed", type: voteType };
       }
     } else {
@@ -659,25 +808,25 @@ export const voteComment = async (req, res) => {
       await CommentVote.create({
         user: userId,
         comment: commentId,
-        type: voteType
+        type: voteType,
       });
-      
-      if (voteType === 'upvote') {
+
+      if (voteType === "upvote") {
         comment.upvotes += 1;
       } else {
         comment.downvotes += 1;
       }
-      
+
       result = { action: "added", type: voteType };
     }
 
     // Save the updated comment
     await comment.save();
-    
+
     // Get user's current vote status
     const userVote = await CommentVote.findOne({
       user: userId,
-      comment: commentId
+      comment: commentId,
     });
 
     // Return the updated comment with user vote info
@@ -685,12 +834,12 @@ export const voteComment = async (req, res) => {
       message: `Vote ${result.action} successfully`,
       comment: {
         ...comment.toObject(),
-        userVoteType: userVote ? userVote.type : null
-      }
+        userVoteType: userVote ? userVote.type : null,
+      },
     });
   } catch (error) {
-    console.error('Error voting on comment:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error voting on comment:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -699,17 +848,17 @@ export const getCommentVoteStatus = async (req, res) => {
   try {
     const { commentId } = req.params;
     const userId = req.user._id;
-    
+
     const vote = await CommentVote.findOne({
       user: userId,
-      comment: commentId
+      comment: commentId,
     });
-    
+
     res.status(200).json({
-      voteStatus: vote ? vote.type : null
+      voteStatus: vote ? vote.type : null,
     });
   } catch (error) {
-    console.error('Error getting comment vote status:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error getting comment vote status:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
