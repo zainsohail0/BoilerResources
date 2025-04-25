@@ -4,6 +4,10 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import mongoose from "mongoose";
 import Vote from "../models/Vote.js";
+import User from "../models/User.js";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Configure Cloudinary
 cloudinary.config({
@@ -104,48 +108,6 @@ export const getCourseResources = async (req, res) => {
     res.status(500).json({ message: "Error fetching resources" });
   }
 };
-/*
-export const getCourseResources = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-
-    if (!courseId) {
-      return res.status(400).json({ message: "Course ID is required" });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({ message: "Invalid course ID format" });
-    }
-
-    const courseObjectId = new mongoose.Types.ObjectId(courseId);
-
-    const course = await Course.findById(courseObjectId);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    const resources = await Resource.find({
-      courseId: courseObjectId,
-    })
-      .populate("postedBy", "username _id")
-      .populate("editHistory.editedBy", "username _id")
-      .populate({
-        path: "comments",
-        populate: {
-          path: "author",
-          model: "User",
-          select: "username _id",
-        },
-      })
-      .sort("-datePosted");
-
-    res.json(resources);
-  } catch (error) {
-    console.error("Error fetching resources:", error);
-    res.status(500).json({ message: "Error fetching resources" });
-  }
-};
-*/
 
 // Upload a new resource
 export const uploadResource = async (req, res) => {
@@ -248,6 +210,59 @@ export const uploadResource = async (req, res) => {
     });
 
     const savedResource = await resource.save();
+    // Find users who are enrolled and opted in for notifications for this course
+    const usersToNotify = await User.find({
+      enrolledCourses: courseId,
+      [`notificationPreferences.${courseId}`]: true,
+    });
+
+    // Create nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    /*
+    const emailHTML = (userName) => `
+      <h2>Boiler Resources | New Resource for ${course.title}</h2>
+      <p><strong>${savedResource.title}</strong> has just been added.</p>
+      <p>${savedResource.description}</p>
+      <a href="http://localhost:3000/courses/${course._id}">
+        Click here to view the resource
+      </a>
+    `;
+    */
+
+    // Email configuration
+    const emailHTML = (userName) => `
+      <h2>Boiler Resources | New Resource for ${course.title}</h2>
+      <p><strong>${savedResource.title}</strong> has just been added.</p>
+      <p>${savedResource.description}</p>
+      <a href="https://asset.cloudinary.com/dzdup5eix/8e8a8a73b3e262ac7a1fdbe753d500d6">
+        Click here to view the resource
+      </a>
+    `;
+
+    for (const user of usersToNotify) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: `New Resource Added for ${course.title}`,
+        html: emailHTML(user.username),
+      };
+
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.error(`❌ Failed to notify ${user.email}:`, error.message);
+        } else {
+          console.log(`📬 Email sent to ${user.email}:`, info.response);
+        }
+      });
+    }
+    
     console.log("Resource saved:", savedResource);
 
     // Return the saved resource with populated fields

@@ -224,6 +224,41 @@ router.post("/login", async (req, res) => {
 // Check if user is authenticated (Session Persistence)
 router.get("/me", async (req, res) => {
   try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id)
+      .select("-password")
+      .populate("enrolledCourses", "title courseCode"); // populate only name and code
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      profileImage: user.profileImage,
+      college: user.college,
+      position: user.position,
+      grade: user.grade,
+      major: user.major,
+      notificationPreferences: user.notificationPreferences,
+      enrolledCourses: user.enrolledCourses, // now includes populated course names
+    });
+  } catch (error) {
+    console.error("Auth check error:", error);
+    res.status(401).json({ message: "Not authenticated" });
+  }
+});
+/*
+router.get("/me", async (req, res) => {
+  try {
     // Get token from cookie
     const token = req.cookies.token;
 
@@ -247,6 +282,7 @@ router.get("/me", async (req, res) => {
     res.status(401).json({ message: "Not authenticated" });
   }
 });
+*/
 
 // Add a route to resend verification email
 router.post("/resend-verification", async (req, res) => {
@@ -594,6 +630,7 @@ router.put("/profile/:userId", async (req, res) => {
     if (updates.grade) user.grade = updates.grade;
     if (updates.major) user.major = updates.major;
     if (updates.profileImage) user.profileImage = updates.profileImage;
+    if (updates.notificationPreferences) user.notificationPreferences = updates.notificationPreferences;
 
     await user.save();
 

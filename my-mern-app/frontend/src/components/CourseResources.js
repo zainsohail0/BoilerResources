@@ -265,8 +265,24 @@ const CourseResources = () => {
           };
         });
 
-        setResources(processedResources);
-        setFilteredResources(processedResources); // Initialize filtered resources
+        // If sorting by mostVotes, sort here
+        let sortedResources = [...processedResources];
+
+        if (resourceSortOrder === "mostVotes") {
+          sortedResources = sortedResources
+            .map((resource) => ({
+              ...resource,
+              netVotes: (resource.upvotes || 0) - (resource.downvotes || 0),
+            }))
+            .sort((a, b) => b.netVotes - a.netVotes || new Date(b.datePosted) - new Date(a.datePosted));
+        }
+
+        setResources(sortedResources);
+        setFilteredResources(sortedResources);
+
+        //setResources(processedResources);
+        //setFilteredResources(processedResources); // Initialize filtered resources
+
       } else {
         console.error("Unexpected response format:", res.data);
         setError("Invalid response format from server");
@@ -399,6 +415,21 @@ const CourseResources = () => {
     }
   }, [courseId, navigate, fetchResources]);
 
+  const handleShare = (resource) => {
+    if (!resource.url) {
+      console.error("No URL found for resource:", resource);
+      return;
+    }
+  
+    navigator.clipboard.writeText(resource.url).then(() => {
+      setCopySuccess(resource._id);
+      setTimeout(() => setCopySuccess(null), 2000);
+    }).catch((err) => {
+      console.error("Failed to copy link:", err);
+    });
+  };
+
+  /*
   const handleShare = (resourceId) => {
     const resourceLink = `${window.location.origin}/resources/${resourceId}`;
     navigator.clipboard.writeText(resourceLink).then(() => {
@@ -406,6 +437,7 @@ const CourseResources = () => {
       setTimeout(() => setCopySuccess(null), 2000); // Clear the confirmation after 2 seconds
     });
   };
+  */
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -1220,19 +1252,23 @@ const handleVote = async (resourceId, voteType) => {
                     </p>
                     <div className="flex items-center mt-2 space-x-2">
                       <button
-                        onClick={() =>
-                          handleVote(resource._id, "upvote")
+                        //onClick={() => handleVote(resource._id, "upvote")}
+                        onClick={() => {
+                          console.log("Upvote clicked for resource:", resource._id);
+                          handleVote(resource._id, "upvote")}
                         }
-                        className="text-sm text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                        className="text-gray-600 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400"
                       >
                         👍 {resource.upvotes || 0}
                       </button>
                       <button
-                        onClick={() =>
-                          handleVote(resource._id, "downvote")
+                        onClick={() => {
+                          console.log("Downvote clicked for resource:", resource._id);
+                          handleVote(resource._id, "downvote")}
                         }
-                        className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      >
+                        //onClick={() => handleVote(resource._id, "downvote")}
+                        className="text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                        >
                         👎 {resource.downvotes || 0}
                       </button>
                     </div>
@@ -1256,7 +1292,7 @@ const handleVote = async (resourceId, voteType) => {
                       </button>
                     )}
                     <button
-                      onClick={() => handleShare(resource._id)}
+                      onClick={() => handleShare(resource)}
                       className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       🔗 Share

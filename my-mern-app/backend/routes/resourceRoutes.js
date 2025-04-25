@@ -60,4 +60,18 @@ router.post("/:resourceId/comments/:commentId/vote", protect, voteComment);
 // Get comment vote status
 router.get("/:resourceId/comments/:commentId/vote-status", protect, getCommentVoteStatus);
 
+// Get a specific resource by ID (for shared links)
+router.get("/:resourceId", protect, async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.resourceId);
+    if (!resource) {
+      return res.status(404).json({ error: "Resource not found" });
+    }
+    res.status(200).json(resource);
+  } catch (err) {
+    console.error("Error fetching resource:", err);
+    res.status(500).json({ error: "Failed to fetch resource" });
+  }
+});
+
 export default router;
