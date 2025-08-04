@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "my-mern-app/backend/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "my-mern-app/frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "my-mern-app/backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "my-mern-app/frontend/build/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
