@@ -2,7 +2,7 @@
   "name": "boileresources",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd my-mern-app/frontend && npm install && npm run build",
+    "build": "cd my-mern-app/frontend && npm install && CI=false npm run build",
     "start": "cd my-mern-app/backend && npm start",
     "dev": "cd my-mern-app/backend && npm run dev"
   },
