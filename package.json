@@ -1,4 +1,11 @@
 {
+  "name": "boileresources",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd my-mern-app/frontend && npm install && npm run build",
+    "start": "cd my-mern-app/backend && npm start",
+    "dev": "cd my-mern-app/backend && npm run dev"
+  },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
