@@ -6,10 +6,10 @@
       "use": "@vercel/node"
     },
     {
-      "src": "my-mern-app/frontend/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "my-mern-app/frontend/build"
       }
     }
   ],
