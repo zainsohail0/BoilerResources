@@ -108,6 +108,7 @@ chatSocketHandler(io);
 // Start Server
 const PORT = process.env.PORT || 5001;
 
+console.log("MongoDB URI:", process.env.MONGODB_URI);
 mongoose
   .set("debug", true)
   .connect(process.env.MONGODB_URI)
