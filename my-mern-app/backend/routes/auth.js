@@ -365,7 +365,7 @@ router.get("/google", passport.authenticate("google", {
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/login",
+    failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
   }),
   async (req, res) => {
     if (!req.user) {
@@ -385,7 +385,7 @@ router.get(
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.redirect("http://localhost:3000/home"); // Redirect to home after login
+    res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/home`); // Redirect to home after login
   }
 );
 
