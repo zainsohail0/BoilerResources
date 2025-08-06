@@ -222,4 +222,4 @@ Full Swagger docs live at `/api/docs` in dev mode.
 
 
 
-> BoilerResources is a student project built by Arya Shukla, Suhesh Venkatesh, Pranavi Chaganti, and Zain Sohail.
+> BoilerResources is a  project built by Arya Shukla, Suhesh Venkatesh, Pranavi Chaganti, and Zain Sohail.
