@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { FcGoogle } from "react-icons/fc";
+import { apiCall } from "../utils/api";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -19,7 +20,7 @@ const LoginForm = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/auth/me", {
+        const res = await fetch(apiCall("/api/auth/me"), {
           method: "GET",
           credentials: "include", // Ensures session is checked
         });
