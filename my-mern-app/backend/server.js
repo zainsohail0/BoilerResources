@@ -111,6 +111,7 @@ const PORT = process.env.PORT || 5001;
 console.log("MongoDB URI length:", process.env.MONGODB_URI?.length);
 console.log("MongoDB URI contains port?", process.env.MONGODB_URI?.includes(':27017') || process.env.MONGODB_URI?.includes(':5001'));
 console.log("Full URI:", JSON.stringify(process.env.MONGODB_URI));
+console.log("Frontend URL:", process.env.FRONTEND_URL);
 mongoose
   .set("debug", true)
   .connect(process.env.MONGODB_URI)
