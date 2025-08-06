@@ -37,7 +37,7 @@ const server = createServer(app);
 // ✅ Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   })
 );
@@ -97,7 +97,7 @@ app.get("/debug-session", (req, res) => {
 // WebSocket Setup
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   },
